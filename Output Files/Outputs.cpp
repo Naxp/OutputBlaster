@@ -224,6 +224,11 @@ const char *COutputs::s_outputNames[] =
 	"Boost22 Brightness",
 	"Boost23 Brightness",
 	"Boost24 Brightness",
+	"TicketCounter",
+	"TicketJackpot",
+	"Coin1",
+	"Coin2",
+	"HighScore",
 };
 
 const char *COutputs::GetOutputName(EOutputs output)

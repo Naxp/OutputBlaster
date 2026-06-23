@@ -230,6 +230,11 @@ enum EOutputs
 	OutputBoost22Brightness,
 	OutputBoost23Brightness,
 	OutputBoost24Brightness,
+	OutputTicketCounter,
+	OutputTicketJackpot,
+	OutputCoin1,
+	OutputCoin2,
+	OutputHighScore,
 	NUM_OUTPUTS
 };
 

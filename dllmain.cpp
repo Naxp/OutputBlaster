@@ -68,6 +68,7 @@ along with Output Blaster.If not, see < https://www.gnu.org/licenses/>.*/
 #include "Game Files/Transformers.h"
 #include "Game Files/TransformersShadowsRising.h"
 #include "Game Files/SonicAllStarsRacing.h"
+#include "Game Files/SonicDashExtreme.h"
 #include "Game Files/VirtuaTennis4.h"
 #include "Game Files/WackyRaces.h"
 #include "Game Files/WMMT5.h"
@@ -242,6 +243,9 @@ DWORD WINAPI OutputsLoop(LPVOID lpParam)
 		break;
 	case 0x55f66578:
 		game = new TransformersShadowsRising;
+		break;
+	case 0xf4b75de0:
+		game = new SonicDashExtreme;
 		break;
 
 	default:

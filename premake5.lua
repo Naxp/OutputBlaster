@@ -4,7 +4,7 @@ workspace "OutputBlaster"
 
 	flags { "StaticRuntime", "No64BitChecks" }
 
-	systemversion "10.0.17134.0"
+	systemversion "10.0.26100.0"
 
 	symbols "On"
 
