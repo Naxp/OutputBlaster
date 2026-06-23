@@ -34,13 +34,17 @@
 ## 2026-06-24 — Task 0003: WinGame TCP Simulator and Pipeline Test
 
 - **Summary:** Created `win-game/simulate.py` — standalone TCP server simulating OutputBlaster NetOutputs protocol (port 8000, `Name = Value\r\n`) with attract→game→boss→payout→reset cycle. Fixed `tokio::spawn` → `tauri::async_runtime::spawn` crash in WinGame setup hook. Created `win-game/.gitignore`. Verified full pipeline: simulator + WinGame connect, render arcade UI with lamps/LEDs/scores/ticket animations.
+- **UX overhaul:** WinGame now starts silently with dimmed cabinet, "Waiting" status, no error messages. No longer requires game/OutputBlaster to be running. Dynamic game name display via `mame_start` signal. Added `connected` flag + `get_status` Tauri command. Replaced hardcoded marquee with dynamic `#gameName` element. Added `.right-panel.waiting` CSS for dimmed idle state. Removed `println!` error messages from TCP client.
 - **Files changed:**
   - `win-game/simulate.py` (new)
   - `win-game/.gitignore` (new)
-  - `win-game/src-tauri/src/lib.rs` (edited: tokio spawn fix)
+  - `win-game/src-tauri/src/lib.rs` (edited: tokio spawn fix, connected flag, mame_start parsing, get_status command)
+  - `win-game/src/main.js` (rewritten: get_status usage, clean waiting state, no error messages)
+  - `win-game/index.html` (edited: dynamic game name span)
+  - `win-game/public/styles.css` (edited: waiting state styles, subtle connection status)
   - `audits/2026-06-24-0003-win-game-tcp-simulator-audit.md` (new)
   - `tasks/0003-win-game-tcp-simulator-and-test.md` (new)
   - `tasks/TASK_INDEX.md` (updated)
   - `Audits_index.md` (updated)
   - `changelog.md` (updated)
-- **Reason for change:** Enable testing of WinGame arcade display app without a physical game; fix runtime crash blocking WinGame launch; document the TCP protocol for future reference.
+- **Reason for change:** Enable testing of WinGame arcade display app without a physical game; fix runtime crash blocking WinGame launch; document the TCP protocol for future reference. WinGame must never require hardware — it starts silently and waits for any game to begin sending data via TCP.

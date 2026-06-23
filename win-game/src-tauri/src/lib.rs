@@ -12,6 +12,8 @@ struct AppState {
     round_active: Mutex<bool>,
     last_tickets: Mutex<i32>,
     high_score: Mutex<i32>,
+    connected: Mutex<bool>,
+    game_name: Mutex<String>,
     tx: broadcast::Sender<String>,
 }
 
@@ -31,6 +33,12 @@ struct OutputsSnapshot {
     coin2: i32,
     high_score: i32,
     lamps: HashMap<String, bool>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct ConnectionStatus {
+    connected: bool,
+    game_name: String,
 }
 
 #[tauri::command]
@@ -91,6 +99,13 @@ fn get_outputs(state: State<AppState>) -> OutputsSnapshot {
         high_score,
         lamps,
     }
+}
+
+#[tauri::command]
+fn get_status(state: State<AppState>) -> ConnectionStatus {
+    let connected = *state.connected.lock().unwrap();
+    let game_name = state.game_name.lock().unwrap().clone();
+    ConnectionStatus { connected, game_name }
 }
 
 #[tauri::command]
@@ -163,7 +178,10 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
     loop {
         match TcpStream::connect("127.0.0.1:8000").await {
             Ok(stream) => {
-                println!("Connected to OutputBlaster at 127.0.0.1:8000");
+                {
+                    let st: State<AppState> = state.state();
+                    *st.connected.lock().unwrap() = true;
+                }
                 let reader = BufReader::new(stream);
                 let mut lines = reader.lines();
                 while let Ok(Some(line)) = lines.next_line().await {
@@ -174,35 +192,38 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
                     if let Some((signal, value)) = line.split_once(" = ") {
                         let signal = signal.trim().to_string();
                         let value = value.trim().to_string();
-                        let state: State<AppState> = state.state();
-                        let mut outputs = state.outputs.lock().unwrap();
+                        let st: State<AppState> = state.state();
+                        let mut outputs = st.outputs.lock().unwrap();
                         outputs.insert(signal.clone(), value.clone());
 
+                        if signal == "mame_start" {
+                            *st.game_name.lock().unwrap() = value.clone();
+                        }
                         if signal == "TicketCounter" {
                             let val: i32 = value.parse().unwrap_or(0);
-                            let mut last = state.last_tickets.lock().unwrap();
-                            let mut round = state.round_active.lock().unwrap();
+                            let mut last = st.last_tickets.lock().unwrap();
+                            let mut round = st.round_active.lock().unwrap();
                             if val > 0 && *last == 0 {
                                 *round = true;
-                                println!("Round started");
                             } else if val == 0 && *last > 0 && *round {
                                 *round = false;
-                                println!("Round ended! Tickets: {}", *last);
-                                let _ = state.tx.send("round_ended".to_string());
+                                let _ = st.tx.send("round_ended".to_string());
                             }
                             *last = val;
                         }
                         if signal == "HighScore" {
                             let val: i32 = value.parse().unwrap_or(0);
-                            let mut hs = state.high_score.lock().unwrap();
+                            let mut hs = st.high_score.lock().unwrap();
                             *hs = val;
                         }
                     }
                 }
-                println!("Disconnected from OutputBlaster");
+                {
+                    let st: State<AppState> = state.state();
+                    *st.connected.lock().unwrap() = false;
+                }
             }
-            Err(e) => {
-                println!("Failed to connect to OutputBlaster: {}. Retrying in 3s...", e);
+            Err(_) => {
                 tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             }
         }
@@ -222,10 +243,13 @@ pub fn run() {
             round_active: Mutex::new(false),
             last_tickets: Mutex::new(0),
             high_score: Mutex::new(0),
+            connected: Mutex::new(false),
+            game_name: Mutex::new(String::new()),
             tx: tx.clone(),
         })
         .invoke_handler(tauri::generate_handler![
             get_outputs,
+            get_status,
             get_scores,
             submit_score,
             round_ended,

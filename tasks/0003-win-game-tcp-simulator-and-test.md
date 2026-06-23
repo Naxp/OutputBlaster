@@ -19,6 +19,13 @@ Create a standalone TCP simulator to test the WinGame arcade display app without
 - [x] Create `win-game/.gitignore` (exclude node_modules, dist, target/)
 - [x] Build WinGame release with fix (cargo build --release)
 - [x] Test: start simulate.py → launch win-game.exe → verify connection and UI
+- [x] **UX overhaul**: WinGame starts silently with dimmed cabinet, "Waiting" status, no error messages
+- [x] Add `connected` flag + `get_status` Tauri command in Rust backend
+- [x] Parse `mame_start` signal for dynamic game name display
+- [x] Replace hardcoded "SONIC DASH EXTREME" with dynamic `#gameName` element
+- [x] Add `.right-panel.waiting` CSS for dimmed idle state
+- [x] Verify standalone launch (no simulator) shows clean waiting UI
+- [x] Verify simulator + WinGame pipeline still works
 
 ## Files Reviewed
 - `Output Files/NetOutputs.cpp` — TCP protocol format (`SeparatorIdAndValue = " = "`, `FrameEnding = "\r" / "\r\n"`)

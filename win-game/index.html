@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcade Output Display</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="cabinet">
+    <div class="marquee">
+      <span class="marquee-text">✦ OUTPUT BLASTER ✦</span>
+      <span class="marquee-sub" id="gameName">---</span>
+    </div>
+    <div class="screen-frame">
+      <div class="screen">
+        <div class="screen-content">
+          <div class="left-panel">
+            <div class="panel-title">HIGH SCORES</div>
+            <div class="score-list" id="scoreList">
+              <div class="score-row header">
+                <span>#</span><span>INITIALS</span><span>SCORE</span><span>TICKETS</span>
+              </div>
+            </div>
+          </div>
+          <div class="right-panel" id="arcadeView">
+            <div class="game-info">
+              <div id="coinDisplay" class="info-box">
+                <span class="info-label">COINS</span>
+                <span class="info-val" id="coinVal">0</span>
+              </div>
+              <div id="jackpotDisplay" class="info-box">
+                <span class="info-label">JACKPOT</span>
+                <span class="info-val" id="jackpotVal">0</span>
+              </div>
+              <div id="hsDisplay" class="info-box">
+                <span class="info-label">HIGH SCORE</span>
+                <span class="info-val" id="hsVal">0</span>
+              </div>
+            </div>
+            <div class="arcade-art">
+              <div class="lamp-row">
+                <div class="lamp start-lamp" id="lampStart"></div>
+                <div class="lamp leader-lamp" id="lampLeader"></div>
+              </div>
+              <div class="led-bar billboard-led" id="billboardLed">
+                <span>BILLBOARD</span>
+              </div>
+              <div class="led-bar marquee-led" id="marqueeLed">
+                <span>MARQUEE</span>
+              </div>
+              <div class="side-leds" id="sideLeds">
+                <div class="led-strip left-strip"></div>
+                <div class="led-strip right-strip"></div>
+              </div>
+              <div class="led-bar woofer-led" id="wooferLed">
+                <span>WOOFER</span>
+              </div>
+              <div class="item-led" id="itemLed">
+                <span>ITEM</span>
+              </div>
+              <div class="ticket-slot" id="ticketSlot">
+                <div class="ticket-count">
+                  <span class="ticket-label">TICKETS</span>
+                  <span class="ticket-value" id="ticketVal">0</span>
+                </div>
+                <div class="ticket-out" id="ticketOut"></div>
+              </div>
+            </div>
+            <div class="connection-status" id="connStatus">Disconnected</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="coin-panel">
+      <div class="coin-button coin-left" id="coinBtn">COIN</div>
+      <div class="start-button" id="startBtn">START</div>
+      <div class="coin-button coin-right">COIN</div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="initialsModal" style="display:none">
+    <div class="modal-box">
+      <h2>NEW HIGH SCORE!</h2>
+      <p>Score: <span id="modalScore"></span></p>
+      <p>Tickets: <span id="modalTickets"></span></p>
+      <p>Enter your initials:</p>
+      <input type="text" id="initialsInput" maxlength="3" class="initials-input" autofocus />
+      <button id="submitBtn" class="modal-btn">SUBMIT</button>
+    </div>
+  </div>
+
+  <canvas id="fireworksCanvas" style="display:none"></canvas>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
