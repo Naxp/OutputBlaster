@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last updated:** 2026-06-23
+> **Last updated:** 2026-06-24
 
 ---
 
@@ -16,3 +16,31 @@
   - `tasks/TASK_INDEX.md` (new)
   - `tasks/0001-update-agents-governance-standard.md` (new)
 - **Reason for change:** Establish repo-standard governance workflow with mandatory pre-read, pass types, task tracking, audit tracking, repo mapping, changelog, Git behavior, and end-of-pass summary requirements.
+
+---
+
+## 2026-06-23 — Task 0002: Create Master Reference Map
+
+- **Summary:** Created comprehensive `docs/MASTER_MAP.md` documenting all 215 EOutputs, full CRC table (62 games), Sonic Dash Extreme memory map, step-by-step game-add guide, TeknoParrot integration, OutputHooker architecture, build commands, and debug tools. Updated `Repo_map.md` and `AGENTS.md` with project specifics.
+- **Files changed:**
+  - `docs/MASTER_MAP.md` (new)
+  - `Repo_map.md` (updated)
+  - `AGENTS.md` (updated)
+  - `audits/2026-06-23-0002-create-master-reference-map-audit.md` (new)
+- **Reason for change:** Single authoritative reference for all project knowledge; eliminates tribal knowledge and reduces drift across AI/dev passes.
+
+---
+
+## 2026-06-24 — Task 0003: WinGame TCP Simulator and Pipeline Test
+
+- **Summary:** Created `win-game/simulate.py` — standalone TCP server simulating OutputBlaster NetOutputs protocol (port 8000, `Name = Value\r\n`) with attract→game→boss→payout→reset cycle. Fixed `tokio::spawn` → `tauri::async_runtime::spawn` crash in WinGame setup hook. Created `win-game/.gitignore`. Verified full pipeline: simulator + WinGame connect, render arcade UI with lamps/LEDs/scores/ticket animations.
+- **Files changed:**
+  - `win-game/simulate.py` (new)
+  - `win-game/.gitignore` (new)
+  - `win-game/src-tauri/src/lib.rs` (edited: tokio spawn fix)
+  - `audits/2026-06-24-0003-win-game-tcp-simulator-audit.md` (new)
+  - `tasks/0003-win-game-tcp-simulator-and-test.md` (new)
+  - `tasks/TASK_INDEX.md` (updated)
+  - `Audits_index.md` (updated)
+  - `changelog.md` (updated)
+- **Reason for change:** Enable testing of WinGame arcade display app without a physical game; fix runtime crash blocking WinGame launch; document the TCP protocol for future reference.
