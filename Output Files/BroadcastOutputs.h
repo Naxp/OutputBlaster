@@ -24,6 +24,7 @@ public:
 
     bool Initialize();
     void Attached();
+    void SetGame(const GameOutput &game);
 
 protected:
     void SendOutput(EOutputs output, UINT32 prevValue, UINT32 value);

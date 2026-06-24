@@ -201,7 +201,7 @@ LRESULT CNetOutputs::RegisterClient(SOCKET socket)
 {
     // Check that given client is not already registered
     for (vector<RegisteredClientTcp>::iterator it = m_clients.begin(), end = m_clients.end(); it != end; it++) {
-        if (it->ClientSocket = socket) {
+        if (it->ClientSocket == socket) {
             // If so, just send it current state of all outputs
             SendAllToClient(*it);
             return 1;

@@ -40,6 +40,13 @@ void CBroadcastOutputs::Attached()
     if (m_b) m_b->Attached();
 }
 
+void CBroadcastOutputs::SetGame(const GameOutput &game)
+{
+    COutputs::SetGame(game);
+    if (m_a) m_a->SetGame(game);
+    if (m_b) m_b->SetGame(game);
+}
+
 void CBroadcastOutputs::SendOutput(EOutputs output, UINT32 prevValue, UINT32 value)
 {
     if (m_a) m_a->SetValue(output, value);
