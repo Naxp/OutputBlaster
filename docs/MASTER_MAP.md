@@ -31,13 +31,14 @@
 
 OutputBlaster is an open-source C++ DLL (GPL v3) that adds output support (LEDs, FFB, ticket counters, coin counters, numeric displays) to arcade games running under TeknoParrot emulation.
 
-### Three-Component System
+### Four-Component System
 
-| Component | Type | Role |
-|-----------|------|------|
-| **OutputBlaster** (`OutputBlaster.dll`) | C++ DLL (injected by TeknoParrot) | Reads game memory at CRC-detected offsets, publishes output values via dual backends |
-| **OutputHooker** (`OutputHooker.exe`) | C++ Qt6 app (standalone) | Receives outputs via WinMsg protocol, routes to hardware/drivers, provides visual display |
-| **WinGame** (`win-game.exe`) | Rust/Tauri app (standalone) | Receives outputs via TCP, renders arcade cabinet display with LEDs, tickets, high scores |
+| Component | Location | Role |
+|-----------|----------|------|
+| **TeknoParrot** | `C:\Users\robon\Desktop\TPBootstrapper\` | Launches arcade games, writes `Enable Outputs=1` to `teknoparrot.ini`, injects `OutputBlaster.dll` into game process |
+| **OutputBlaster** (`OutputBlaster.dll`) | `E:\Projects\OutputBlaster\bin\x86\Release\` + deployed to each `<game_root>\` | C++ DLL injected by TeknoParrot. Reads game memory at CRC-detected offsets, publishes output values via dual backends |
+| **OutputHooker** (`OutputHooker.exe`) | `E:\Projects\OutputHooker\build\Release\` | C++ Qt6 app (standalone). Receives outputs via WinMsg protocol, routes to hardware/drivers, provides visual display |
+| **WinGame** (`win-game.exe`) | `E:\Projects\OutputBlaster\win-game\src-tauri\target\release\` + deployed to each `<game_root>\` | Rust/Tauri app (standalone). Receives outputs via TCP, renders arcade cabinet display with LEDs, tickets, high scores |
 
 ### Key Concepts
 
@@ -54,56 +55,67 @@ OutputBlaster is an open-source C++ DLL (GPL v3) that adds output support (LEDs,
 ### Data Flow
 
 ```
-                        ┌──────────────────────────────────┐
-                        │     Game Process (e.g.,           │
-                        │  SonicDash_R_Ring.exe)            │
-                        │                                   │
-                        │  Memory at known offsets:         │
-                        │   ├── lamp bytes                  │
-                        │   ├── ticket counter              │
-                        │   ├── coin counters               │
-                        │   └── high score / jackpot        │
-                        └──────────┬────────────────────────┘
-                                   │
-                                   │ OutputBlaster.dll injected by TeknoParrot
-                                   ▼
-                  ┌───────────────────────────────────────────┐
-                  │           OutputBlaster.dll                │
-                  │                                            │
-                  │  1. DllMain → CreateThread(OutputsLoop)   │
-                  │  2. CRC32 detection → switch(game)        │
-                  │  3. Game::OutputsGameLoop()                │
-                  │     → Create polling thread               │
-                  │     → ReadByte/ReadInt32 at offsets       │
-                  │     → Outputs->SetValue(name, value)      │
-                  │                                            │
-                  │  CBroadcastOutputs forwards to BOTH:      │
-                  │  ┌──────────────┐  ┌──────────────────┐  │
-                  │  │  CWinOutputs  │  │  CNetOutputs     │  │
-                  │  │  (WinMsg)     │  │  (TCP 37520 +    │  │
-                  │  │               │  │   UDP 37521)     │  │
-                  │  └──────┬───────┘  └────────┬─────────┘  │
-                  └─────────┼────────────────────┼────────────┘
-                            │                    │
-                            ▼                    ▼
-              ┌──────────────────────┐  ┌──────────────────────────────┐
-              │    OutputHooker      │  │     WinGame (win-game.exe)   │
-              │   WinMsgModule       │  │                              │
-              │   (MAMEHooker        │  │  TCP client on 127.0.0.1:   │
-              │    protocol)         │  │  37520                       │
-              │                      │  │                              │
-              │  Routes to:          │  │  Renders arcade cabinet:    │
-              │   ├─ LED-Wiz         │  │   ├─ Billboard triangle     │
-              │   ├─ PacDrive        │  │   ├─ Speaker woofers        │
-              │   ├─ SDL3 controllers│  │   ├─ Side LEDs L/R          │
-              │   ├─ HID devices     │  │   ├─ Item LEDs              │
-              │   ├─ COM ports       │  │   ├─ Misc box               │
-              │   ├─ TCP/UDP/HTTP    │  │   ├─ Ticket counter + anim  │
-              │   └─ Sound effects   │  │   ├─ High score leaderboard │
-              └──────────────────────┘  │   └─ Initials modal         │
-                                        └──────────────────────────────┘
+                    TEKNOPARROT (C:\Users\robon\Desktop\TPBootstrapper\)
+                         │
+                         │ Launches game via LLHook/StartEx
+                         │ Injects OutputBlaster.dll
+                         │ Writes EXE dir as CWD
+                         ▼
+                    ┌──────────────────────────────────┐
+                    │     Game Process (e.g.,           │
+                    │  SonicDash_R_Ring.exe)            │
+                    │                                   │
+                    │  Memory at known offsets:         │
+                    │   ├── lamp bytes                  │
+                    │   ├── ticket counter              │
+                    │   ├── coin counters               │
+                    │   └── high score / jackpot        │
+                    └──────────┬────────────────────────┘
+                               │
+                               │ OutputBlaster.dll injected by TeknoParrot
+                               ▼
+              ┌───────────────────────────────────────────┐
+              │           OutputBlaster.dll                │
+              │                                            │
+              │  1. DllMain → CreateThread(OutputsLoop)   │
+              │  2. CRC32 detection → switch(game)        │
+              │  3. Game::OutputsGameLoop()                │
+              │     → Create polling thread               │
+              │     → ReadByte/ReadInt32 at offsets       │
+              │     → Outputs->SetValue(name, value)      │
+              │                                            │
+              │  CBroadcastOutputs forwards to BOTH:      │
+              │  ┌──────────────┐  ┌──────────────────┐  │
+              │  │  CWinOutputs  │  │  CNetOutputs     │  │
+              │  │  (WinMsg)     │  │  (TCP 37520 +    │  │
+              │  │               │  │   UDP 37521)     │  │
+              │  └──────┬───────┘  └────────┬─────────┘  │
+              └─────────┼────────────────────┼────────────┘
+                        │                    │
+                        ▼                    ▼
+          ┌──────────────────────┐  ┌──────────────────────────────┐
+          │    OutputHooker      │  │     WinGame (win-game.exe)   │
+          │   WinMsgModule       │  │                              │
+          │   (MAMEHooker        │  │  TCP client on 127.0.0.1:   │
+          │    protocol)         │  │  37520                       │
+          │                      │  │                              │
+          │  Routes to:          │  │  Renders arcade cabinet:    │
+          │   ├─ LED-Wiz         │  │   ├─ Billboard triangle     │
+          │   ├─ PacDrive        │  │   ├─ Speaker woofers        │
+          │   ├─ SDL3 controllers│  │   ├─ Side LEDs L/R          │
+          │   ├─ HID devices     │  │   ├─ Item LEDs              │
+          │   ├─ COM ports       │  │   ├─ Misc box               │
+          │   ├─ TCP/UDP/HTTP    │  │   ├─ Ticket counter + anim  │
+          │   └─ Sound effects   │  │   ├─ High score leaderboard │
+          └──────────────────────┘  │   ├─ Modular stat boxes     │
+                                    │   ├─ Coin button lighting   │
+                                    │   ├─ Start button lighting  │
+                                    │   └─ Initials modal         │
+                                    └──────────────────────────────┘
 
-### Key File Relationships
+### Hardware/Direct Output Mapping (INI Files)
+
+OutputHooker maps signals to physical outputs using `.ini` files in `<exedir>/ini/`:
 
 | File | Role |
 |------|------|
@@ -816,6 +828,18 @@ Copy the pattern from `SonicDashExtreme.cpp`:
 
 ## 9. TeknoParrot Integration Guide
 
+### TeknoParrot Location
+
+```
+TeknoParrot UI:          C:\Users\robon\Desktop\TPBootstrapper\TeknoParrotUi.exe
+GameProfiles (XML):      C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\
+Source GameProfiles:     E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\
+```
+
+**CRITICAL:** When editing XML profiles, you MUST copy to BOTH locations:
+1. `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\` (source of truth)
+2. `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\` (runtime)
+
 ### How OutputBlaster Gets Loaded
 
 1. **XML Profile** defines `Enable Outputs` field
@@ -1192,18 +1216,28 @@ __try {
 
 ### File Placement Map
 
-Every game needs these files in these EXACT locations:
-
 ```
-<game_root>\                         (e.g., Sonic Dash Extreme (2015)[Sega Nu][TP]\)
-├── OutputBlaster.dll                [REQUIRED] The OB DLL (TeknoParrot loads this)
-├── OutputBlaster.ini                [REQUIRED] Config (OutputsSystem=1, TCP port, Sleep, etc.)
-├── win-game.exe                     [OPTIONAL] WinGame binary (AutoLaunchWinGame=1)
+TEKNOPARROT:                             C:\Users\robon\Desktop\TPBootstrapper\
+├── TeknoParrotUi.exe                    TeknoParrot UI launcher
+└── GameProfiles\                        XML profiles — Must match source!
+    ├── SonicDashExtreme.xml             [Has Enable Outputs]
+    ├── Frogger.xml                      [MUST have Enable Outputs field]
+    ├── Ghostbusters.xml                 [MUST have Enable Outputs field]
+    └── ... (30+ more profiles)
+
+OUTPUT HOOKER:                           E:\Projects\OutputHooker\build\Release\
+└── OutputHooker.exe                     WinMsg receiver + hardware router
+
+EACH GAME ROOT:                          E:\Games-Roms\Tekno\<Game Name>\
+├── OutputBlaster.dll                    [REQUIRED] The OB DLL (TeknoParrot loads this)
+├── OutputBlaster.ini                    [REQUIRED] Config (OutputsSystem=1, TCP port, Sleep, etc.)
+├── win-game.exe                         [OPTIONAL] WinGame binary (AutoLaunchWinGame=1)
 │
-└── exe\
-    ├── SonicDash_R_Ring.exe         [GAME] The actual game EXE
-    ├── OutputBlaster.dll            [REQUIRED] Same DLL copy! (CWD may be exe\)
-    └── OutputBlaster.ini            [REQUIRED] Same INI copy! (CWD may be exe\)
+└── exe\                                 [if exists]
+    ├── <Game.exe>                       [GAME] The actual game EXE
+    ├── OutputBlaster.dll                [REQUIRED] Same DLL copy! (CWD may be exe\)
+    ├── OutputBlaster.ini                [REQUIRED] Same INI copy! (CWD may be exe\)
+    └── dinput8.dll                      [TeknoParrot proxy, already present]
 ```
 
 **Rule of thumb:** ALWAYS copy `OutputBlaster.dll` AND `OutputBlaster.ini` to BOTH `<game_root>\` and `<game_root>\exe\`.
@@ -1221,8 +1255,8 @@ Every game needs these files in these EXACT locations:
 
 ### Start Order
 
-1. **Launch OutputHooker** (optional — for hardware routing + visual debug)
-2. **Launch TeknoParrot** → select game → **Start**
+1. **Launch OutputHooker** (optional — for hardware routing + visual debug) from `E:\Projects\OutputHooker\build\Release\OutputHooker.exe`
+2. **Launch TeknoParrot** from `C:\Users\robon\Desktop\TPBootstrapper\TeknoParrotUi.exe` → select game → **Start**
 3. **TeknoParrot** injects OutputBlaster.dll into game process
 4. **OutputBlaster.dll** detects game by CRC, starts polling thread
 5. **NetOutputs** TCP server starts on port 37520
@@ -1247,9 +1281,12 @@ Every game needs these files in these EXACT locations:
 - [ ] Build OutputBlaster (Release|x86)
 - [ ] Copy `OutputBlaster.dll` to `<game_root>\` AND `<game_root>\exe\`
 - [ ] Copy `OutputBlaster.ini` to both directories (with `OutputsSystem=1`)
-- [ ] Ensure game XML profile has `Enable Outputs=1` (in TeknoParrotUI GameProfiles)
-- [ ] Launch game from TeknoParrot
-- [ ] Check DebugView for: `New CRC: XXXXXXXX not implemented`
+- [ ] Add `Enable Outputs=1` to game XML profile in BOTH locations:
+  - [ ] Source: `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\<Game>.xml`
+  - [ ] Runtime: `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\<Game>.xml`
+- [ ] Add `Enable Outputs=1` to `teknoparrot.ini` if game already has one
+- [ ] Launch game from TeknoParrot (`C:\Users\robon\Desktop\TPBootstrapper\TeknoParrotUi.exe`)
+- [ ] Check DebugView for: `OB: No game match — CRC: XXXXXXXX`
 - [ ] Note the CRC hex value
 
 ### Phase 2: Find Memory Offsets
@@ -1319,14 +1356,22 @@ Every game needs these files in these EXACT locations:
 | NetOutputs (TCP/UDP) | `E:\Projects\OutputBlaster\Output Files\NetOutputs.h/.cpp` |
 | Broadcast outputs (dual backend) | `E:\Projects\OutputBlaster\Output Files\BroadcastOutputs.h/.cpp` |
 | Sonic Dash Extreme handler | `E:\Projects\OutputBlaster\Game Files\SonicDashExtreme.h/.cpp` |
+| Frogger handler | `E:\Projects\OutputBlaster\Game Files\Frogger.h/.cpp` |
+| Ghostbusters handler | `E:\Projects\OutputBlaster\Game Files\Ghostbusters.h/.cpp` |
 | Build config | `E:\Projects\OutputBlaster\premake5.lua` |
 | Governance rules | `E:\Projects\OutputBlaster\Agents.md` |
 | Active plan | `E:\Projects\OutputBlaster\PLAN_SonicDashExtreme.md` |
 | Master map | `E:\Projects\OutputBlaster\docs\MASTER_MAP.md` |
-| Game directory | `E:\Games-Roms\Tekno\Sonic Dash Extreme (2015)[Sega Nu][TP]\` |
-| Game executable | `E:\Games-Roms\...\exe\SonicDash_R_Ring.exe` |
-| OutputBlaster.ini | `E:\Games-Roms\...\OutputBlaster.ini` AND `E:\Games-Roms\...\exe\OutputBlaster.ini` |
-| teknoparrot.ini | `E:\Games-Roms\...\exe\teknoparrot.ini` |
+| **TeknoParrot UI** | **`C:\Users\robon\Desktop\TPBootstrapper\`** |
+| **TeknoParrot GameProfiles (runtime)** | **`C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\`** |
+| **TeknoParrot GameProfiles (source)** | **`E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\`** |
+| Game directory (Sonic) | `E:\Games-Roms\Tekno\Sonic Dash Extreme (2015)[Sega Nu][TP]\` |
+| Game directory (Frogger) | `E:\Games-Roms\Tekno\Frogger (1.38)(2013-08-30)(China)[Raw Thrills PC][TP]\` |
+| Game directory (Ghostbusters) | `E:\Games-Roms\Tekno\Ghostbusters (1.17)(2019-02-05)[ICE-RT Linux PC][TP]\` |
+| Game executable (Sonic) | `E:\Games-Roms\...\exe\SonicDash_R_Ring.exe` |
+| Game executable (Frogger) | `E:\Games-Roms\...\sdaemon.exe` |
+| OutputBlaster.ini | `<game_root>\OutputBlaster.ini` AND `<game_root>\exe\OutputBlaster.ini` |
+| teknoparrot.ini | `<game_root>\exe\teknoparrot.ini` or `<game_root>\pm\teknoparrot.ini` |
 | WinGame source | `E:\Projects\OutputBlaster\win-game\` |
 | WinGame backend | `E:\Projects\OutputBlaster\win-game\src-tauri\src\lib.rs` |
 | WinGame frontend | `E:\Projects\OutputBlaster\win-game\src\main.js` |

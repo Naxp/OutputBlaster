@@ -1,6 +1,6 @@
 # OutputBlaster — Agent Governance
 
-> **Last updated:** 2026-06-23
+> **Last updated:** 2026-06-24
 > **Type:** Permanent repo rulebook
 > **Scope:** All AI/dev passes on this repository
 
@@ -9,6 +9,15 @@
 ## Project Overview
 
 OutputBlaster is an open-source C++ DLL (GPL v3) that adds output support (LEDs, FFB, ticket counters, etc.) to arcade games running under TeknoParrot emulation. It uses CRC-based game detection to identify the running game, then polls memory at known offsets and exposes values through MAMEHooker-compatible outputs.
+
+### Four-Component System
+
+| Component | Location | Role |
+|-----------|----------|------|
+| **TeknoParrot** | `C:\Users\robon\Desktop\TPBootstrapper\` | Launches arcade games via LLHook/StartEx. Writes `Enable Outputs=1` to `teknoparrot.ini`, loads `OutputBlaster.dll` into game process. |
+| **OutputBlaster** (`OutputBlaster.dll`) | `E:\Projects\OutputBlaster\bin\x86\Release\` + deployed to each `<game_root>\` | C++ DLL injected by TeknoParrot. Reads game memory at CRC-detected offsets, publishes output values via dual backends (WinMsg + TCP). |
+| **OutputHooker** (`OutputHooker.exe`) | `E:\Projects\OutputHooker\build\Release\` | C++ Qt6 app. Receives outputs via WinMsg protocol, routes to hardware/drivers (LED-Wiz, PacDrive, SDL, HID, COM), provides visual display. |
+| **WinGame** (`win-game.exe`) | `E:\Projects\OutputBlaster\win-game\src-tauri\target\release\` + deployed to each `<game_root>\` | Rust/Tauri app. Receives outputs via TCP on port 37520, renders arcade cabinet display with LEDs, tickets, high scores. |
 
 ### Key Stack
 
@@ -232,7 +241,28 @@ premake5.bat            # Generates VS2017 project files
 - No external dependencies beyond MinHook (bundled) and Windows SDK.
 - No comments in generated/agent-written code unless explicitly requested.
 
-### 9.8 File Structure Convention
+### 9.8 Key File Locations (CRITICAL — Do Not Guess)
+
+```
+TeknoParrot UI (used to launch games):  C:\Users\robon\Desktop\TPBootstrapper\
+TeknoParrot GameProfiles (XML):         C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\
+                                          (source: E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\)
+OutputHooker source:                     E:\Projects\OutputHooker\
+OutputHooker binary:                     E:\Projects\OutputHooker\build\Release\OutputHooker.exe
+
+Game root directories:                   E:\Games-Roms\Tekno\<Game Name>\
+  Sonic Dash Extreme:                    E:\Games-Roms\Tekno\Sonic Dash Extreme (2015)[Sega Nu][TP]\
+  Frogger:                               E:\Games-Roms\Tekno\Frogger (1.38)(2013-08-30)(China)[Raw Thrills PC][TP]\
+  Ghostbusters:                          E:\Games-Roms\Tekno\Ghostbusters (1.17)(2019-02-05)[ICE-RT Linux PC][TP]\
+```
+
+**IMPORTANT DEPLOYMENT RULES:**
+- `OutputBlaster.dll` and `OutputBlaster.ini` go in BOTH `<game_root>\` AND `<game_root>\exe\` (CWD varies)
+- When editing GameProfiles XML, copy to BOTH `E:\Projects\TeknoParrotUI\...\GameProfiles\` AND `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\`
+- WinGame binary goes in `<game_root>\` (and `<game_root>\exe\` if it exists)
+- `teknoparrot.ini` must have `Enable Outputs=1` in `[General]` section
+
+### 9.9 File Structure Convention
 
 ```
 /

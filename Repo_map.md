@@ -1,7 +1,7 @@
 # OutputBlaster — Repository Map
 
 > **Last updated:** 2026-06-24
-> **Task:** 0006-broadcast-outputs-wingame-ui-redesign
+> **Task:** 0007-frogger-ghostbusters-modular-stats
 
 ---
 
@@ -82,6 +82,23 @@ E:\Projects\OutputBlaster\
     └── 0006-broadcast-outputs-wingame-ui-redesign.md
 ```
 
+## External System Paths
+
+```
+TEKNOPARROT UI (launcher):              C:\Users\robon\Desktop\TPBootstrapper\
+TEKNOPARROT GameProfiles (runtime):     C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\
+TEKNOPARROT GameProfiles (source):      E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\
+OUTPUTHOOKER source:                    E:\Projects\OutputHooker\
+OUTPUTHOOKER binary:                    E:\Projects\OutputHooker\build\Release\OutputHooker.exe
+
+Game root directories:                  E:\Games-Roms\Tekno\<Game Name>\
+  Sonic Dash Extreme:                   E:\Games-Roms\Tekno\Sonic Dash Extreme (2015)[Sega Nu][TP]\
+  Frogger:                              E:\Games-Roms\Tekno\Frogger (1.38)(2013-08-30)(China)[Raw Thrills PC][TP]\
+  Ghostbusters:                         E:\Games-Roms\Tekno\Ghostbusters (1.17)(2019-02-05)[ICE-RT Linux PC][TP]\
+```
+
+**CRITICAL:** XML profiles must be edited in BOTH source and runtime GameProfiles directories.
+
 ---
 
 ## Major Systems
@@ -113,12 +130,22 @@ E:\Projects\OutputBlaster\
 - Custom `wingame://` protocol serves embedded HTML
 - Self-contained binary (frontend embedded via build.rs)
 - LED layout: Billboard triangle, Woofer speakers, Side LEDs, Item LEDs, Misc box
+- Modular per-game stat boxes (STAT_CONFIGS lookup in main.js)
+- Coin/start button lighting based on live output values
 
 ### 5. Build System (`premake5.lua`)
 - Generates Visual Studio project files
 - `premake5.bat` → `MSBuild /p:PlatformToolset=v145`
 - Static runtime, C++17, Unicode
 - MinHook linked per platform/config
+
+### 6. TeknoParrot Integration (`C:\Users\robon\Desktop\TPBootstrapper\`)
+- Writes `Enable Outputs=1` to `teknoparrot.ini` from XML profile
+- Launches game process via LLHook/StartEx
+- Loads `OutputBlaster.dll` from game root dir when `Enable Outputs=1`
+- XML profiles in `GameProfiles\` define ConfigValues (including Enable Outputs)
+- Source profiles at `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\`
+- **Must sync XML changes to both source and runtime GameProfiles directories**
 
 ---
 
@@ -136,12 +163,21 @@ E:\Projects\OutputBlaster\
 | `win-game/src-tauri/build.rs` | Frontend build + embedding pipeline |
 | `docs/MASTER_MAP.md` | Complete system reference + cheat sheet |
 | `premake5.lua` | Build configuration, platform settings, dependencies |
+| `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\*.xml` | TeknoParrot runtime game config (sync from source) |
+| `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\*.xml` | TeknoParrot XML profile source of truth |
 
 ---
 
 ## Current Active Development
 
-- **Target:** Sonic Dash Extreme (Sega Nu, 2015)
-- **Status:** WORKING — 23 outputs, ticket counter via pointer chain, boss detection, per-round JSON tracking, WinGame display with full LED layout
+- **Target games:** Sonic Dash Extreme (working), Frogger (CRC placeholder), Ghostbusters (CRC placeholder)
+- **Status:** Sonic fully functional (23 outputs). Frogger + Ghostbusters need CRC confirmation from user.
 - **Ports:** TCP 37520, UDP broadcast 37521
 - **Dual output:** Both OutputHooker (WinMsg) and WinGame (TCP) receive data simultaneously
+- **WinGame features:** Billboard triangle, Woofer glow, Side/Item LEDs, modular per-game stat boxes, coin/start button lighting
+
+## Remaining Work
+
+- [ ] Run Frogger → capture real CRC from DebugView → update FROGGER_CRC in dllmain.cpp
+- [ ] Run Ghostbusters → capture real CRC → update GHOSTBUSTERS_CRC
+- [ ] Confirm Ghostbusters memory offsets (ghosts separate from score, tickets, P2 coins, shots)
