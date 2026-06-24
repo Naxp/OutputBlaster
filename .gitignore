@@ -4,3 +4,10 @@
 .vs/
 bin/
 obj/
+
+# WinGame runtime
+scores.json
+wingame.html
+win-game/win-game.exe
+win-game/test_*.txt
+<game_root>/
