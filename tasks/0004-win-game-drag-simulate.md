@@ -1,0 +1,41 @@
+# Task 0004 — WinGame drag/simulate + GameProfiles XML fix
+
+- **Date:** 2026-06-24
+- **Goal:** Make WinGame usable (draggable, testable) and fix OB DLL injection
+- **Scope:**
+  - Add `data-tauri-drag-region` to marquee for window dragging
+  - Add close button and `close_app` Tauri command
+  - Add Sim Data button and `simulate` Tauri command for offline UI testing
+  - Add `Enable Outputs` FieldInformation to GameProfiles XML so TeknoParrot injects OB DLL
+- **Checklist:**
+  - [x] Add drag-region to index.html marquee
+  - [x] Add drag cursor CSS
+  - [x] Add close button content in index.html
+  - [x] Add close button CSS
+  - [x] Add `close_app` Rust command
+  - [x] Register `close_app` in invoke_handler
+  - [x] Add simulate button in index.html
+  - [x] Add simulate button CSS
+  - [x] Add `simulate` Rust command with fake data
+  - [x] Register `simulate` in invoke_handler
+  - [x] Wire JS handlers for close + simulate
+  - [x] Add Enable Outputs field to GameProfiles XML
+  - [x] Rebuild WinGame (release)
+  - [x] Verify binary runs
+  - [x] Update changelog, task index, audit index
+- **Files reviewed:**
+  - `win-game/index.html`
+  - `win-game/public/styles.css`
+  - `win-game/src/main.js`
+  - `win-game/src-tauri/src/lib.rs`
+  - `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\SonicDashExtreme.xml`
+- **Files changed:**
+  - `win-game/index.html`
+  - `win-game/public/styles.css`
+  - `win-game/src/main.js`
+  - `win-game/src-tauri/src/lib.rs`
+  - `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\SonicDashExtreme.xml`
+  - `changelog.md`
+- **Audit reference:** audits/2026-06-24-0004-win-game-drag-simulate-audit.md
+- **Changelog reference:** changelog.md — Pass 0004: WinGame drag/simulate + GameProfiles XML fix
+- **Completion status:** ✓ Complete

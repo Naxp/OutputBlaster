@@ -55,3 +55,15 @@
   - `Audits_index.md` (updated)
   - `changelog.md` (updated)
 - **Reason for change:** Enable testing of WinGame arcade display app without a physical game; fix runtime crash blocking WinGame launch; document the TCP protocol for future reference. WinGame must never require hardware — it starts silently and waits for any game to begin sending data via TCP.
+
+### 2026-06-24 — Pass 0004: WinGame drag/simulate + GameProfiles XML fix
+
+- **Task reference:** 0004
+- **Summary:** Make WinGame window draggable (data-tauri-drag-region), add close button, add Sim Data button for offline testing, fix GameProfiles XML to include Enable Outputs field so TeknoParrot injects OB DLL
+- **Files changed:**
+  - `win-game/index.html` (added close button, simulate button)
+  - `win-game/public/styles.css` (added drag cursor, close-btn, sim-btn styles)
+  - `win-game/src/main.js` (added close_app, simulate invoke handlers)
+  - `win-game/src-tauri/src/lib.rs` (added close_app + simulate Tauri commands)
+  - `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\SonicDashExtreme.xml` (added Enable Outputs field)
+- **Reason for change:** Window was immovable (decorations: false, no drag-region); no way to test UI without live game; OB DLL not injected because GameProfiles template lacked Enable Outputs field

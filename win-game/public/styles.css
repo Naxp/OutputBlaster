@@ -41,7 +41,23 @@ body {
   justify-content: center;
   border-radius: 16px 16px 0 0;
   text-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+  cursor: grab;
+  position: relative;
 }
+
+.marquee:active { cursor: grabbing; }
+
+.close-btn {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  color: rgba(255,255,255,0.3);
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 10;
+  transition: color 0.15s;
+}
+.close-btn:hover { color: #fff; }
 
 .marquee-text {
   font-size: 32px;
@@ -538,6 +554,20 @@ body {
 }
 
 .debug-hint { color: #555; font-weight: 400; font-size: 10px; }
+
+.sim-btn {
+  display: block;
+  margin: 6px auto 0;
+  padding: 3px 12px;
+  font: 10px/1.4 'Courier New', monospace;
+  background: transparent;
+  color: #e94560;
+  border: 1px solid #e94560;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sim-btn:hover { background: #e94560; color: #fff; }
 
 .debug-log {
   flex: 1;

@@ -8,9 +8,10 @@
 </head>
 <body>
   <div class="cabinet">
-    <div class="marquee">
+    <div class="marquee" data-tauri-drag-region>
       <span class="marquee-text">✦ OUTPUT BLASTER ✦</span>
       <span class="marquee-sub" id="gameName">---</span>
+      <span class="close-btn" id="closeBtn" title="Close (Alt+F4)">✕</span>
     </div>
     <div class="screen-frame">
       <div class="screen">
@@ -68,6 +69,7 @@
               </div>
             </div>
             <div class="connection-status" id="connStatus">Disconnected</div>
+            <button id="simulateBtn" class="sim-btn" title="Inject simulated game data for testing">Sim Data</button>
           </div>
         </div>
       </div>

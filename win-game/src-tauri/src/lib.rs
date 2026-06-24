@@ -175,6 +175,48 @@ fn save_scores(scores: &[ScoreEntry]) {
     }
 }
 
+#[tauri::command]
+fn close_app() {
+    std::process::exit(0);
+}
+
+#[tauri::command]
+fn simulate(state: State<AppState>) -> ConnectionStatus {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let t = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+
+    let mut outputs = state.outputs.lock().unwrap();
+    outputs.insert("TicketCounter".into(), ((t % 500) + 10).to_string());
+    outputs.insert("TicketJackpot".into(), ((t % 10000) + 1000).to_string());
+    outputs.insert("Coin1".into(), ((t % 50) + 1).to_string());
+    outputs.insert("HighScore".into(), ((t % 999999) + 100000).to_string());
+    outputs.insert("LampStart".into(), if t % 3 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("LampLeader".into(), if t % 5 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("LampRed".into(), "1".into());
+    outputs.insert("LampGreen".into(), if t % 2 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("LampBlue".into(), if t % 3 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("Billboard Red".into(), if t % 4 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("Billboard Green".into(), "1".into());
+    outputs.insert("Billboard Blue".into(), if t % 2 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("SideLEDRed".into(), "1".into());
+    outputs.insert("SideLEDGreen".into(), if t % 3 != 0 { "1".into() } else { "0".into() });
+    outputs.insert("SideLEDBlue".into(), if t % 7 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("WooferLEDRed".into(), if t % 5 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("WooferLEDGreen".into(), if t % 2 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("WooferLEDBlue".into(), "1".into());
+    outputs.insert("ItemLEDRed".into(), "1".into());
+    outputs.insert("ItemLEDGreen".into(), if t % 4 == 0 { "1".into() } else { "0".into() });
+    outputs.insert("ItemLEDBlue".into(), if t % 7 == 0 { "1".into() } else { "0".into() });
+
+    *state.connected.lock().unwrap() = true;
+    *state.game_name.lock().unwrap() = "Sonic Dash Extreme [SIMULATED]".into();
+    *state.last_tickets.lock().unwrap() = ((t % 500) + 10) as i32;
+    *state.high_score.lock().unwrap() = ((t % 999999) + 100000) as i32;
+
+    log_info(&state, "Simulated game data injected");
+    ConnectionStatus { connected: true, game_name: "Sonic Dash Extreme [SIMULATED]".into() }
+}
+
 fn load_scores() -> Vec<ScoreEntry> {
     if let Ok(data) = std::fs::read_to_string("scores.json") {
         if let Ok(scores) = serde_json::from_str(&data) {
@@ -308,6 +350,8 @@ pub fn run() {
             get_scores,
             submit_score,
             round_ended,
+            close_app,
+            simulate,
         ])
         .setup(|app| {
             if let Some(path) = write_html() {

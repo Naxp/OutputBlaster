@@ -232,6 +232,19 @@ document.getElementById('initialsInput').addEventListener('input', (e) => {
   e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
 });
 
+// --- Close button ---
+document.getElementById('closeBtn').addEventListener('click', () => {
+  invoke('close_app');
+});
+
+// --- Simulate button ---
+document.getElementById('simulateBtn').addEventListener('click', async () => {
+  document.getElementById('simulateBtn').textContent = 'Simulating...';
+  await invoke('simulate');
+  await updateDisplay();
+  document.getElementById('simulateBtn').textContent = 'Sim Data';
+});
+
 // --- Start ---
 pollInterval = setInterval(updateDisplay, 200);
 debugInterval = setInterval(updateDebugLog, 500);
