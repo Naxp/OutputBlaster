@@ -82,7 +82,7 @@ void CWinOutputs::Attached()
 	PostMessage(HWND_BROADCAST, m_onStart, (WPARAM)m_hwnd, 0);
 }
 
-void CWinOutputs::SendOutput(EOutputs output, UINT8 prevValue, UINT8 value)
+void CWinOutputs::SendOutput(EOutputs output, UINT32 prevValue, UINT32 value)
 {	
 	// Loop through all registered clients and send them new output value
 	LPARAM param = (LPARAM)output + 1;

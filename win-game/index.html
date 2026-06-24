@@ -8,10 +8,13 @@
 </head>
 <body>
   <div class="cabinet">
-    <div class="marquee" data-tauri-drag-region>
-      <span class="marquee-text">✦ OUTPUT BLASTER ✦</span>
-      <span class="marquee-sub" id="gameName">---</span>
-      <span class="close-btn" id="closeBtn" title="Close (Alt+F4)">✕</span>
+    <div class="title-bar" id="dragRegion">
+      <span class="title-bar-text">OUTPUT BLASTER</span>
+      <span class="title-bar-sub" id="gameName">---</span>
+      <div class="title-bar-controls">
+        <button class="minimize-btn" id="minimizeBtn" title="Minimize">&#x2013;</button>
+        <button class="close-btn" id="closeBtn" title="Close">&#x2715;</button>
+      </div>
     </div>
     <div class="screen-frame">
       <div class="screen">
@@ -83,6 +86,7 @@
       <div class="start-button" id="startBtn">START</div>
       <div class="coin-button coin-right">COIN</div>
     </div>
+    <div class="status-bar" id="statusBar">Waiting for game (port 8000)...</div>
   </div>
 
   <div class="modal-overlay" id="initialsModal" style="display:none">

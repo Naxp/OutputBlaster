@@ -64,7 +64,7 @@ void CNetOutputs::Attached()
 
 }
 
-void CNetOutputs::SendOutput(EOutputs output, UINT8 prevValue, UINT8 value)
+void CNetOutputs::SendOutput(EOutputs output, UINT32 prevValue, UINT32 value)
 {
     // Loop through all registered clients and send them new output value
     LPARAM param = (LPARAM)output + 1;

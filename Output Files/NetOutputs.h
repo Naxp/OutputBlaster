@@ -76,7 +76,7 @@ protected:
 	 *
 	 * Sends the appropriate output message to all registered clients.
 	 */
-	void SendOutput(EOutputs output, UINT8 prevValue, UINT8 value);
+	void SendOutput(EOutputs output, UINT32 prevValue, UINT32 value);
 
 private:
 	bool s_createdClass = false;

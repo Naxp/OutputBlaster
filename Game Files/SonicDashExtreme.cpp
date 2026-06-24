@@ -218,12 +218,12 @@ static int WindowsLoop()
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {}
 
-    Outputs->SetValue(OutputTicketCounter, (UINT8)ticketNow);
-    Outputs->SetValue(OutputTicketJackpot, (UINT8)jackpot);
-    Outputs->SetValue(OutputCoin1, (UINT8)coins1);
-    Outputs->SetValue(OutputCoin2, (UINT8)max(coins2a, coins2b));
-    Outputs->SetValue(OutputHighScore, (UINT8)highScore);
-    Outputs->SetValue(OutputRings, (UINT8)rings);
+    Outputs->SetValue(OutputTicketCounter, ticketNow);
+    Outputs->SetValue(OutputTicketJackpot, jackpot);
+    Outputs->SetValue(OutputCoin1, coins1);
+    Outputs->SetValue(OutputCoin2, max(coins2a, coins2b));
+    Outputs->SetValue(OutputHighScore, highScore);
+    Outputs->SetValue(OutputRings, rings);
 
     if (ticketNow != g_LastTicketValue || jackpot != g_LastJackpot || coins1 != g_LastCoin1 || max(coins2a, coins2b) != g_LastCoin2 || highScore != g_LastHighScore || rings != g_LastRings)
     {

@@ -299,14 +299,14 @@ public:
 	 *
 	 * Returns the current value of the given output.
 	 */
-	UINT8 GetValue(EOutputs output) const;
+	UINT32 GetValue(EOutputs output) const;
 
 	/*
 	 * SetValue(output, value):
 	 *
 	 * Sets the current value of the given output.
 	 */
-	void SetValue(EOutputs output, UINT8 value);
+	void SetValue(EOutputs output, UINT32 value);
 
 	/* 
 	 * HasValue(EOutputs output)
@@ -330,14 +330,14 @@ protected:
 	 * Called when an output's value changes so that the subclass can handle it appropriately.
 	 * To be implemented by the subclass.
 	 */
-	virtual void SendOutput(EOutputs output, UINT8 prevValue, UINT8 value) = 0;
+	virtual void SendOutput(EOutputs output, UINT32 prevValue, UINT32 value) = 0;
 
 private:
 	static const char* s_outputNames[]; // Static array of output names
 
 	GameOutput m_game;                  // Currently running game
 	bool m_first[NUM_OUTPUTS];    // For each output, true if an initial value has been set
-	UINT8 m_values[NUM_OUTPUTS];  // Current value of each output
+	UINT32 m_values[NUM_OUTPUTS];  // Current value of each output
 };
 
 #endif	// INCLUDED_OUTPUTS_H

@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 let pollInterval = null;
 let debugInterval = null;
@@ -135,21 +136,26 @@ async function updateDisplay() {
   } catch (_) { connected = false; }
 
   const connStatus = document.getElementById('connStatus');
+  const statusBar = document.getElementById('statusBar');
   if (connected) {
     connStatus.textContent = 'Connected';
     connStatus.className = 'connection-status connected';
+    statusBar.textContent = gameName ? `${gameName} — Connected` : 'Connected';
+    statusBar.className = 'status-bar connected';
   } else {
     connStatus.textContent = 'Waiting';
     connStatus.className = 'connection-status';
+    statusBar.textContent = 'Waiting for game (port 8000)...';
+    statusBar.className = 'status-bar';
   }
   setCabinetDimmed(!connected);
 
   if (!connected) {
     document.getElementById('coinVal').textContent = '0';
     document.getElementById('jackpotVal').textContent = '0';
-  document.getElementById('hsVal').textContent = '0';
-  document.getElementById('ringsVal').textContent = '0';
-  document.getElementById('ticketVal').textContent = '0';
+    document.getElementById('hsVal').textContent = '0';
+    document.getElementById('ringsVal').textContent = '0';
+    document.getElementById('ticketVal').textContent = '0';
     updateLamp('lampStart', false);
     updateLamp('lampLeader', false);
     document.getElementById('billboardLed').classList.remove('active');
@@ -160,14 +166,13 @@ async function updateDisplay() {
     return;
   }
 
-  // Connected — update display from outputs
-  document.getElementById('coinVal').textContent = (await invoke('get_outputs')).coin1;
-  document.getElementById('jackpotVal').textContent = (await invoke('get_outputs')).ticket_jackpot;
-  document.getElementById('hsVal').textContent = (await invoke('get_outputs')).high_score;
-  document.getElementById('ringsVal').textContent = (await invoke('get_outputs')).rings;
-  document.getElementById('ticketVal').textContent = (await invoke('get_outputs')).ticket_counter;
-
   const o = await invoke('get_outputs');
+  document.getElementById('coinVal').textContent = o.coin1;
+  document.getElementById('jackpotVal').textContent = o.ticket_jackpot;
+  document.getElementById('hsVal').textContent = o.high_score;
+  document.getElementById('ringsVal').textContent = o.rings;
+  document.getElementById('ticketVal').textContent = o.ticket_counter;
+
   updateLamp('lampStart', o.lamps.LampStart);
   updateLamp('lampLeader', o.lamps.LampLeader);
   document.getElementById('billboardLed').classList.toggle('active',
@@ -218,6 +223,26 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// --- Window controls ---
+const appWindow = getCurrentWindow();
+
+document.getElementById('closeBtn').addEventListener('click', () => {
+  appWindow.close();
+});
+
+document.getElementById('minimizeBtn').addEventListener('click', () => {
+  appWindow.minimize();
+});
+
+// --- Drag via Tauri API (works with decorations:false + file://) ---
+const dragRegion = document.getElementById('dragRegion');
+if (dragRegion) {
+  dragRegion.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.close-btn, .minimize-btn')) return;
+    appWindow.startDragging();
+  });
+}
+
 // --- Submit initials ---
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const input = document.getElementById('initialsInput');
@@ -232,11 +257,6 @@ document.getElementById('initialsInput').addEventListener('keydown', (e) => {
 });
 document.getElementById('initialsInput').addEventListener('input', (e) => {
   e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
-});
-
-// --- Close button ---
-document.getElementById('closeBtn').addEventListener('click', () => {
-  invoke('close_app');
 });
 
 // --- Simulate button ---

@@ -271,7 +271,7 @@ void COutputs::SetGame(const GameOutput &game)
 	m_game = game;
 }
 
-UINT8 COutputs::GetValue(EOutputs output) const
+UINT32 COutputs::GetValue(EOutputs output) const
 {
 	int idx = (unsigned)output;
 	if (idx < 0 || idx >= NUM_OUTPUTS)
@@ -279,13 +279,13 @@ UINT8 COutputs::GetValue(EOutputs output) const
 	return m_values[idx];
 }
 
-void COutputs::SetValue(EOutputs output, UINT8 value)
+void COutputs::SetValue(EOutputs output, UINT32 value)
 {
 	int idx = (unsigned)output;
 	if (idx < 0 || idx >= NUM_OUTPUTS)
 		return;
 	bool firstSet = m_first[idx];
-	UINT8 prevValue = m_values[idx];
+	UINT32 prevValue = m_values[idx];
 	m_first[idx] = false;
 	m_values[idx] = value;
 	if (firstSet || value != prevValue)
