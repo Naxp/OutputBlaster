@@ -35,13 +35,15 @@
 
 - **Summary:** Created `win-game/simulate.py` — standalone TCP server simulating OutputBlaster NetOutputs protocol (port 8000, `Name = Value\r\n`) with attract→game→boss→payout→reset cycle. Fixed `tokio::spawn` → `tauri::async_runtime::spawn` crash in WinGame setup hook. Created `win-game/.gitignore`. Verified full pipeline: simulator + WinGame connect, render arcade UI with lamps/LEDs/scores/ticket animations.
 - **UX overhaul:** WinGame now starts silently with dimmed cabinet, "Waiting" status, no error messages. No longer requires game/OutputBlaster to be running. Dynamic game name display via `mame_start` signal. Added `connected` flag + `get_status` Tauri command. Replaced hardcoded marquee with dynamic `#gameName` element. Added `.right-panel.waiting` CSS for dimmed idle state. Removed `println!` error messages from TCP client.
+- **Debug overlay:** In-memory log ring buffer (512 entries) with `get_logs` Tauri command. Debug panel toggled with F12 showing real-time log output. `println!`/`eprintln!` console logging for terminal visibility.
+- **Bug fixes:** Fixed `initials` borrow-after-move in `submit_score`. Ensured dist/ is always rebuilt before Rust build.
 - **Files changed:**
   - `win-game/simulate.py` (new)
   - `win-game/.gitignore` (new)
-  - `win-game/src-tauri/src/lib.rs` (edited: tokio spawn fix, connected flag, mame_start parsing, get_status command)
-  - `win-game/src/main.js` (rewritten: get_status usage, clean waiting state, no error messages)
-  - `win-game/index.html` (edited: dynamic game name span)
-  - `win-game/public/styles.css` (edited: waiting state styles, subtle connection status)
+  - `win-game/src-tauri/src/lib.rs` (edited: tokio spawn fix, connected flag, mame_start parsing, get_status, get_logs, in-memory log buffer, console logging, score submit fix)
+  - `win-game/src/main.js` (rewritten: get_status usage, clean waiting state, no error messages, debug overlay polling, F12 toggle)
+  - `win-game/index.html` (edited: dynamic game name span, debug overlay HTML)
+  - `win-game/public/styles.css` (edited: waiting state styles, subtle connection status, debug overlay styles)
   - `audits/2026-06-24-0003-win-game-tcp-simulator-audit.md` (new)
   - `tasks/0003-win-game-tcp-simulator-and-test.md` (new)
   - `tasks/TASK_INDEX.md` (updated)

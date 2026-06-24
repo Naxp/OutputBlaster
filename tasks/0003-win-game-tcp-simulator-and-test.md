@@ -26,6 +26,12 @@ Create a standalone TCP simulator to test the WinGame arcade display app without
 - [x] Add `.right-panel.waiting` CSS for dimmed idle state
 - [x] Verify standalone launch (no simulator) shows clean waiting UI
 - [x] Verify simulator + WinGame pipeline still works
+- [x] Add in-memory log ring buffer (512 entries) + `get_logs` Tauri command
+- [x] Add debug overlay panel (F12 toggle) showing real-time log output
+- [x] Add `println!`/`eprintln!` console logging for terminal visibility
+- [x] Fix `initials` borrow-after-move bug in submit_score
+- [x] Fix dist/ consistency: frontend rebuilt before every Rust build
+- [x] Test end-to-end: standalone launch + simulator mode both verified
 
 ## Files Reviewed
 - `Output Files/NetOutputs.cpp` — TCP protocol format (`SeparatorIdAndValue = " = "`, `FrameEnding = "\r" / "\r\n"`)

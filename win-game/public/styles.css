@@ -509,3 +509,44 @@ body {
   50% { transform: scale(1.5) translateY(-50px); opacity: 1; }
   100% { transform: scale(1) translateY(-100px); opacity: 0; }
 }
+
+/* Debug overlay */
+#debugOverlay {
+  position: fixed;
+  top: 0; right: 0;
+  width: 500px;
+  height: 100%;
+  background: rgba(0,0,0,0.92);
+  border-left: 2px solid #e94560;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 11px;
+  color: #8ab4f8;
+}
+
+.debug-header {
+  color: #e94560;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 6px;
+}
+
+.debug-hint { color: #555; font-weight: 400; font-size: 10px; }
+
+.debug-log {
+  flex: 1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.debug-log div { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.debug-log .log-error { color: #ff4444; }
+.debug-log .log-info { color: #8ab4f8; }

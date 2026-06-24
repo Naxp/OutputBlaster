@@ -6,6 +6,8 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast;
 
+const MAX_LOG_ENTRIES: usize = 512;
+
 struct AppState {
     outputs: Mutex<HashMap<String, String>>,
     scores: Mutex<Vec<ScoreEntry>>,
@@ -14,7 +16,26 @@ struct AppState {
     high_score: Mutex<i32>,
     connected: Mutex<bool>,
     game_name: Mutex<String>,
+    logs: Mutex<Vec<String>>,
     tx: broadcast::Sender<String>,
+}
+
+fn log(state: &AppState, msg: String) {
+    let mut logs = state.logs.lock().unwrap();
+    logs.push(msg);
+    if logs.len() > MAX_LOG_ENTRIES {
+        logs.remove(0);
+    }
+}
+
+fn log_info(state: &AppState, msg: &str) {
+    println!("[WinGame] {}", msg);
+    log(state, format!("[INFO] {}", msg));
+}
+
+fn log_err(state: &AppState, msg: &str) {
+    eprintln!("[WinGame] ERROR: {}", msg);
+    log(state, format!("[ERROR] {}", msg));
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -109,6 +130,12 @@ fn get_status(state: State<AppState>) -> ConnectionStatus {
 }
 
 #[tauri::command]
+fn get_logs(state: State<AppState>) -> Vec<String> {
+    let logs = state.logs.lock().unwrap();
+    logs.clone()
+}
+
+#[tauri::command]
 fn get_scores(state: State<AppState>) -> Vec<ScoreEntry> {
     let scores = state.scores.lock().unwrap();
     let mut sorted = scores.clone();
@@ -126,13 +153,15 @@ fn submit_score(
 ) -> Vec<ScoreEntry> {
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M").to_string();
     let entry = ScoreEntry {
-        initials,
+        initials: initials.clone(),
         score,
         tickets,
         date: now,
     };
+    log_info(&state, &format!("Score submitted: {} {} {}", initials, score, tickets));
     let mut scores = state.scores.lock().unwrap();
     scores.push(entry);
+    log_info(&state, &format!("Score submitted: {} {} {}", initials, score, tickets));
     let mut sorted = scores.clone();
     sorted.sort_by(|a, b| b.score.cmp(&a.score));
     sorted.truncate(10);
@@ -178,10 +207,10 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
     loop {
         match TcpStream::connect("127.0.0.1:8000").await {
             Ok(stream) => {
-                {
-                    let st: State<AppState> = state.state();
-                    *st.connected.lock().unwrap() = true;
-                }
+                let st: State<AppState> = state.state();
+                *st.connected.lock().unwrap() = true;
+                log_info(&st, "TCP connected to OutputBlaster on port 8000");
+                drop(st);
                 let reader = BufReader::new(stream);
                 let mut lines = reader.lines();
                 while let Ok(Some(line)) = lines.next_line().await {
@@ -197,6 +226,7 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
                         outputs.insert(signal.clone(), value.clone());
 
                         if signal == "mame_start" {
+                            log_info(&st, &format!("Game detected: {}", value));
                             *st.game_name.lock().unwrap() = value.clone();
                         }
                         if signal == "TicketCounter" {
@@ -205,8 +235,10 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
                             let mut round = st.round_active.lock().unwrap();
                             if val > 0 && *last == 0 {
                                 *round = true;
+                                log_info(&st, "Round started (TicketCounter 0 -> positive)");
                             } else if val == 0 && *last > 0 && *round {
                                 *round = false;
+                                log_info(&st, &format!("Round ended! Tickets: {}", *last));
                                 let _ = st.tx.send("round_ended".to_string());
                             }
                             *last = val;
@@ -218,12 +250,14 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
                         }
                     }
                 }
-                {
-                    let st: State<AppState> = state.state();
-                    *st.connected.lock().unwrap() = false;
-                }
+                let st: State<AppState> = state.state();
+                *st.connected.lock().unwrap() = false;
+                log_info(&st, "TCP disconnected from OutputBlaster");
             }
-            Err(_) => {
+            Err(e) => {
+                let st: State<AppState> = state.state();
+                log_err(&st, &format!("TCP connect failed: {} — retrying in 3s", e));
+                drop(st);
                 tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             }
         }
@@ -235,6 +269,8 @@ pub fn run() {
     let scores = load_scores();
     let (tx, _rx) = broadcast::channel::<String>(100);
 
+    println!("[WinGame] Starting Arcade Output Display v0.1.0");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(AppState {
@@ -245,17 +281,20 @@ pub fn run() {
             high_score: Mutex::new(0),
             connected: Mutex::new(false),
             game_name: Mutex::new(String::new()),
+            logs: Mutex::new(Vec::new()),
             tx: tx.clone(),
         })
         .invoke_handler(tauri::generate_handler![
             get_outputs,
             get_status,
+            get_logs,
             get_scores,
             submit_score,
             round_ended,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
+            println!("[WinGame] Setup complete — spawning TCP client loop");
             tauri::async_runtime::spawn(async move {
                 tcp_client_loop(handle).await;
             });

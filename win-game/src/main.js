@@ -1,6 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 
 let pollInterval = null;
+let debugInterval = null;
+let debugVisible = false;
 let ticketAnimActive = false;
 let canvas = document.getElementById('fireworksCanvas');
 let ctx = canvas.getContext('2d');
@@ -16,9 +18,7 @@ initCanvas();
 
 class Particle {
   constructor(x, y, color) {
-    this.x = x;
-    this.y = y;
-    this.color = color;
+    this.x = x; this.y = y; this.color = color;
     const angle = Math.random() * Math.PI * 2;
     const speed = Math.random() * 6 + 2;
     this.vx = Math.cos(angle) * speed;
@@ -27,10 +27,7 @@ class Particle {
     this.decay = Math.random() * 0.02 + 0.01;
   }
   update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += 0.05;
-    this.life -= this.decay;
+    this.x += this.vx; this.y += this.vy; this.vy += 0.05; this.life -= this.decay;
   }
   draw() {
     ctx.globalAlpha = this.life;
@@ -64,9 +61,7 @@ function animateFireworks() {
 
 function startFireworks() {
   canvas.style.display = 'block';
-  for (let i = 0; i < 5; i++) {
-    setTimeout(() => burstFireworks(), i * 400);
-  }
+  for (let i = 0; i < 5; i++) setTimeout(() => burstFireworks(), i * 400);
   if (animFrame) cancelAnimationFrame(animFrame);
   animateFireworks();
 }
@@ -94,8 +89,7 @@ function spawnTicketAnimation(finalTickets) {
         const popup = document.createElement('div');
         popup.className = 'score-popup';
         popup.textContent = `WINNER! ${finalTickets} TICKETS!`;
-        popup.style.left = '50%';
-        popup.style.top = '40%';
+        popup.style.left = '50%'; popup.style.top = '40%';
         popup.style.transform = 'translateX(-50%)';
         document.body.appendChild(popup);
         setTimeout(() => popup.remove(), 3000);
@@ -111,7 +105,7 @@ function updateScoreList(scores) {
   scores.forEach((s, i) => {
     const row = document.createElement('div');
     row.className = 'score-row' + (i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '');
-    row.innerHTML = `<span>${i + 1}</span><span>${s.initials}</span><span>${s.score.toLocaleString()}</span><span>${s.tickets.toLocaleString()}</span>`;
+    row.innerHTML = `<span>${i+1}</span><span>${s.initials}</span><span>${s.score.toLocaleString()}</span><span>${s.tickets.toLocaleString()}</span>`;
     list.appendChild(row);
   });
 }
@@ -133,15 +127,12 @@ function setGameName(name) {
 async function updateDisplay() {
   let connected = false;
   let gameName = '';
-
   try {
     const status = await invoke('get_status');
     connected = status.connected;
     gameName = status.game_name;
     setGameName(gameName);
-  } catch (_) {
-    connected = false;
-  }
+  } catch (_) { connected = false; }
 
   const connStatus = document.getElementById('connStatus');
   if (connected) {
@@ -151,7 +142,6 @@ async function updateDisplay() {
     connStatus.textContent = 'Waiting';
     connStatus.className = 'connection-status';
   }
-
   setCabinetDimmed(!connected);
 
   if (!connected) {
@@ -169,65 +159,80 @@ async function updateDisplay() {
     return;
   }
 
-  try {
-    const outputs = await invoke('get_outputs');
+  // Connected — update display from outputs
+  document.getElementById('coinVal').textContent = (await invoke('get_outputs')).coin1;
+  document.getElementById('jackpotVal').textContent = (await invoke('get_outputs')).ticket_jackpot;
+  document.getElementById('hsVal').textContent = (await invoke('get_outputs')).high_score;
+  document.getElementById('ticketVal').textContent = (await invoke('get_outputs')).ticket_counter;
 
-    document.getElementById('coinVal').textContent = outputs.coin1;
-    document.getElementById('jackpotVal').textContent = outputs.ticket_jackpot;
-    document.getElementById('hsVal').textContent = outputs.high_score;
-    document.getElementById('ticketVal').textContent = outputs.ticket_counter;
+  const o = await invoke('get_outputs');
+  updateLamp('lampStart', o.lamps.LampStart);
+  updateLamp('lampLeader', o.lamps.LampLeader);
+  document.getElementById('billboardLed').classList.toggle('active',
+    o.lamps['Billboard Red'] || o.lamps['Billboard Green'] || o.lamps['Billboard Blue']);
+  document.getElementById('marqueeLed').classList.toggle('active',
+    o.lamps.LampRed || o.lamps.LampGreen || o.lamps.LampBlue);
+  document.getElementById('sideLeds').querySelectorAll('.led-strip').forEach(el => el.classList.toggle('active',
+    o.lamps.SideLEDRed || o.lamps.SideLEDGreen || o.lamps.SideLEDBlue));
+  document.getElementById('wooferLed').classList.toggle('active',
+    o.lamps.WooferLEDRed || o.lamps.WooferLEDGreen || o.lamps.WooferLEDBlue);
+  document.getElementById('itemLed').classList.toggle('active',
+    o.lamps.ItemLEDRed || o.lamps.ItemLEDGreen || o.lamps.ItemLEDBlue);
 
-    updateLamp('lampStart', outputs.lamps.LampStart);
-    updateLamp('lampLeader', outputs.lamps.LampLeader);
-    document.getElementById('billboardLed').classList.toggle('active',
-      outputs.lamps['Billboard Red'] || outputs.lamps['Billboard Green'] || outputs.lamps['Billboard Blue']);
-    document.getElementById('marqueeLed').classList.toggle('active',
-      outputs.lamps.LampRed || outputs.lamps.LampGreen || outputs.lamps.LampBlue);
-    document.getElementById('sideLeds').querySelectorAll('.led-strip').forEach(el => el.classList.toggle('active',
-      outputs.lamps.SideLEDRed || outputs.lamps.SideLEDGreen || outputs.lamps.SideLEDBlue));
-    document.getElementById('wooferLed').classList.toggle('active',
-      outputs.lamps.WooferLEDRed || outputs.lamps.WooferLEDGreen || outputs.lamps.WooferLEDBlue);
-    document.getElementById('itemLed').classList.toggle('active',
-      outputs.lamps.ItemLEDRed || outputs.lamps.ItemLEDGreen || outputs.lamps.ItemLEDBlue);
+  updateScoreList(await invoke('get_scores'));
 
-    const scores = await invoke('get_scores');
-    updateScoreList(scores);
-
-    const roundData = await invoke('round_ended');
-    if (roundData) {
-      const [score, tickets] = roundData;
-      document.getElementById('modalScore').textContent = score.toLocaleString();
-      document.getElementById('modalTickets').textContent = tickets.toLocaleString();
-      document.getElementById('initialsModal').style.display = 'flex';
-      document.getElementById('initialsInput').value = '';
-      document.getElementById('initialsInput').focus();
-      spawnTicketAnimation(tickets);
-    }
-  } catch (_) {
+  const roundData = await invoke('round_ended');
+  if (roundData) {
+    const [score, tickets] = roundData;
+    document.getElementById('modalScore').textContent = score.toLocaleString();
+    document.getElementById('modalTickets').textContent = tickets.toLocaleString();
+    document.getElementById('initialsModal').style.display = 'flex';
+    document.getElementById('initialsInput').value = '';
+    document.getElementById('initialsInput').focus();
+    spawnTicketAnimation(tickets);
   }
 }
 
+// --- Debug overlay ---
+async function updateDebugLog() {
+  if (!debugVisible) return;
+  try {
+    const logs = await invoke('get_logs');
+    const container = document.getElementById('debugLog');
+    container.innerHTML = logs.map(l => {
+      const cls = l.startsWith('[ERROR]') ? 'log-error' : 'log-info';
+      return `<div class="${cls}">${l}</div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  } catch (_) {}
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F12') {
+    e.preventDefault();
+    debugVisible = !debugVisible;
+    document.getElementById('debugOverlay').style.display = debugVisible ? 'flex' : 'none';
+    if (debugVisible) updateDebugLog();
+  }
+});
+
+// --- Submit initials ---
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const input = document.getElementById('initialsInput');
   const initials = input.value.toUpperCase().slice(0, 3).padEnd(3, ' ');
-  const scoreText = document.getElementById('modalScore').textContent;
-  const ticketsText = document.getElementById('modalTickets').textContent;
-  const score = parseInt(scoreText.replace(/,/g, '')) || 0;
-  const tickets = parseInt(ticketsText.replace(/,/g, '')) || 0;
-  if (initials.trim()) {
-    const scores = await invoke('submit_score', { initials, score, tickets });
-    updateScoreList(scores);
-  }
+  const score = parseInt(document.getElementById('modalScore').textContent.replace(/,/g,'')) || 0;
+  const tickets = parseInt(document.getElementById('modalTickets').textContent.replace(/,/g,'')) || 0;
+  if (initials.trim()) updateScoreList(await invoke('submit_score', { initials, score, tickets }));
   document.getElementById('initialsModal').style.display = 'none';
 });
-
 document.getElementById('initialsInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('submitBtn').click();
 });
-
 document.getElementById('initialsInput').addEventListener('input', (e) => {
-  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
 });
 
+// --- Start ---
 pollInterval = setInterval(updateDisplay, 200);
+debugInterval = setInterval(updateDebugLog, 500);
 updateDisplay();
