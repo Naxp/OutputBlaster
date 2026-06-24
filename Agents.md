@@ -258,7 +258,10 @@ Game root directories:                   E:\Games-Roms\Tekno\<Game Name>\
 
 **IMPORTANT DEPLOYMENT RULES:**
 - `OutputBlaster.dll` and `OutputBlaster.ini` go in BOTH `<game_root>\` AND `<game_root>\exe\` (CWD varies)
-- When editing GameProfiles XML, copy to BOTH `E:\Projects\TeknoParrotUI\...\GameProfiles\` AND `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\`
+- When editing GameProfiles XML, copy to ALL locations:
+  - `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\` (source of truth)
+  - `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\` (runtime stock profiles)
+  - `C:\Users\robon\Desktop\TPBootstrapper\UserProfiles\` (runtime user profiles — overrides GameProfiles)
 - WinGame binary goes in `<game_root>\` (and `<game_root>\exe\` if it exists)
 - `teknoparrot.ini` must have `Enable Outputs=1` in `[General]` section
 

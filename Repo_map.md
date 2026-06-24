@@ -86,7 +86,8 @@ E:\Projects\OutputBlaster\
 
 ```
 TEKNOPARROT UI (launcher):              C:\Users\robon\Desktop\TPBootstrapper\
-TEKNOPARROT GameProfiles (runtime):     C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\
+TEKNOPARROT GameProfiles (stock):       C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\
+TEKNOPARROT UserProfiles (override):    C:\Users\robon\Desktop\TPBootstrapper\UserProfiles\
 TEKNOPARROT GameProfiles (source):      E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\
 OUTPUTHOOKER source:                    E:\Projects\OutputHooker\
 OUTPUTHOOKER binary:                    E:\Projects\OutputHooker\build\Release\OutputHooker.exe
@@ -145,7 +146,8 @@ Game root directories:                  E:\Games-Roms\Tekno\<Game Name>\
 - Loads `OutputBlaster.dll` from game root dir when `Enable Outputs=1`
 - XML profiles in `GameProfiles\` define ConfigValues (including Enable Outputs)
 - Source profiles at `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\`
-- **Must sync XML changes to both source and runtime GameProfiles directories**
+- User-saved overrides in `UserProfiles\` — these take priority over GameProfiles
+- **Must sync XML changes to ALL THREE: source stock, runtime stock, runtime user**
 
 ---
 
@@ -163,7 +165,8 @@ Game root directories:                  E:\Games-Roms\Tekno\<Game Name>\
 | `win-game/src-tauri/build.rs` | Frontend build + embedding pipeline |
 | `docs/MASTER_MAP.md` | Complete system reference + cheat sheet |
 | `premake5.lua` | Build configuration, platform settings, dependencies |
-| `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\*.xml` | TeknoParrot runtime game config (sync from source) |
+| `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\*.xml` | TeknoParrot runtime stock game config (sync from source) |
+| `C:\Users\robon\Desktop\TPBootstrapper\UserProfiles\*.xml` | TeknoParrot runtime user overrides (sync from source, overrides stock) |
 | `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\*.xml` | TeknoParrot XML profile source of truth |
 
 ---

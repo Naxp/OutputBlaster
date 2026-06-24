@@ -832,13 +832,15 @@ Copy the pattern from `SonicDashExtreme.cpp`:
 
 ```
 TeknoParrot UI:          C:\Users\robon\Desktop\TPBootstrapper\TeknoParrotUi.exe
-GameProfiles (XML):      C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\
+GameProfiles (stock):    C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\
+UserProfiles (runtime):  C:\Users\robon\Desktop\TPBootstrapper\UserProfiles\
 Source GameProfiles:     E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\
 ```
 
-**CRITICAL:** When editing XML profiles, you MUST copy to BOTH locations:
+**CRITICAL:** When editing XML profiles, you MUST update ALL THREE locations:
 1. `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\` (source of truth)
-2. `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\` (runtime)
+2. `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\` (runtime stock)
+3. `C:\Users\robon\Desktop\TPBootstrapper\UserProfiles\` (runtime user, overrides stock)
 
 ### How OutputBlaster Gets Loaded
 
@@ -1219,11 +1221,15 @@ __try {
 ```
 TEKNOPARROT:                             C:\Users\robon\Desktop\TPBootstrapper\
 ├── TeknoParrotUi.exe                    TeknoParrot UI launcher
-└── GameProfiles\                        XML profiles — Must match source!
-    ├── SonicDashExtreme.xml             [Has Enable Outputs]
-    ├── Frogger.xml                      [MUST have Enable Outputs field]
-    ├── Ghostbusters.xml                 [MUST have Enable Outputs field]
-    └── ... (30+ more profiles)
+├── GameProfiles\                        Stock XML profiles (source from TeknoParrotUI project)
+│   ├── SonicDashExtreme.xml             [Has Enable Outputs]
+│   ├── Frogger.xml                      [MUST have Enable Outputs field]
+│   ├── Ghostbusters.xml                 [MUST have Enable Outputs field]
+│   └── ... (30+ more profiles)
+└── UserProfiles\                        User-saved override profiles — ALWAYS update these too!
+    ├── Frogger.xml                      [Overrides GameProfiles\Frogger.xml]
+    ├── GhostBusters.xml                 [Overrides GameProfiles\Ghostbusters.xml]
+    └── ... (62 profiles — all now have Enable Outputs)
 
 OUTPUT HOOKER:                           E:\Projects\OutputHooker\build\Release\
 └── OutputHooker.exe                     WinMsg receiver + hardware router
@@ -1281,10 +1287,11 @@ EACH GAME ROOT:                          E:\Games-Roms\Tekno\<Game Name>\
 - [ ] Build OutputBlaster (Release|x86)
 - [ ] Copy `OutputBlaster.dll` to `<game_root>\` AND `<game_root>\exe\`
 - [ ] Copy `OutputBlaster.ini` to both directories (with `OutputsSystem=1`)
-- [ ] Add `Enable Outputs=1` to game XML profile in BOTH locations:
+- [ ] Add `Enable Outputs=1` to game XML profile in ALL THREE locations:
   - [ ] Source: `E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\<Game>.xml`
-  - [ ] Runtime: `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\<Game>.xml`
-- [ ] Add `Enable Outputs=1` to `teknoparrot.ini` if game already has one
+  - [ ] Runtime stock: `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\<Game>.xml`
+  - [ ] Runtime user: `C:\Users\robon\Desktop\TPBootstrapper\UserProfiles\<Game>.xml`
+- [ ] Add `Enable Outputs=1` to `teknoparrot.ini` if game already has one (in `<game_root>\` or `<game_root>\pm\`)
 - [ ] Launch game from TeknoParrot (`C:\Users\robon\Desktop\TPBootstrapper\TeknoParrotUi.exe`)
 - [ ] Check DebugView for: `OB: No game match — CRC: XXXXXXXX`
 - [ ] Note the CRC hex value
@@ -1363,7 +1370,8 @@ EACH GAME ROOT:                          E:\Games-Roms\Tekno\<Game Name>\
 | Active plan | `E:\Projects\OutputBlaster\PLAN_SonicDashExtreme.md` |
 | Master map | `E:\Projects\OutputBlaster\docs\MASTER_MAP.md` |
 | **TeknoParrot UI** | **`C:\Users\robon\Desktop\TPBootstrapper\`** |
-| **TeknoParrot GameProfiles (runtime)** | **`C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\`** |
+| **TeknoParrot GameProfiles (runtime stock)** | **`C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\`** |
+| **TeknoParrot UserProfiles (runtime override)** | **`C:\Users\robon\Desktop\TPBootstrapper\UserProfiles\`** |
 | **TeknoParrot GameProfiles (source)** | **`E:\Projects\TeknoParrotUI\TeknoParrotUi.Common\GameProfiles\`** |
 | Game directory (Sonic) | `E:\Games-Roms\Tekno\Sonic Dash Extreme (2015)[Sega Nu][TP]\` |
 | Game directory (Frogger) | `E:\Games-Roms\Tekno\Frogger (1.38)(2013-08-30)(China)[Raw Thrills PC][TP]\` |
