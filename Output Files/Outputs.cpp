@@ -229,6 +229,7 @@ const char *COutputs::s_outputNames[] =
 	"Coin1",
 	"Coin2",
 	"HighScore",
+	"Rings",
 };
 
 const char *COutputs::GetOutputName(EOutputs output)

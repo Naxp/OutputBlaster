@@ -147,8 +147,9 @@ async function updateDisplay() {
   if (!connected) {
     document.getElementById('coinVal').textContent = '0';
     document.getElementById('jackpotVal').textContent = '0';
-    document.getElementById('hsVal').textContent = '0';
-    document.getElementById('ticketVal').textContent = '0';
+  document.getElementById('hsVal').textContent = '0';
+  document.getElementById('ringsVal').textContent = '0';
+  document.getElementById('ticketVal').textContent = '0';
     updateLamp('lampStart', false);
     updateLamp('lampLeader', false);
     document.getElementById('billboardLed').classList.remove('active');
@@ -163,6 +164,7 @@ async function updateDisplay() {
   document.getElementById('coinVal').textContent = (await invoke('get_outputs')).coin1;
   document.getElementById('jackpotVal').textContent = (await invoke('get_outputs')).ticket_jackpot;
   document.getElementById('hsVal').textContent = (await invoke('get_outputs')).high_score;
+  document.getElementById('ringsVal').textContent = (await invoke('get_outputs')).rings;
   document.getElementById('ticketVal').textContent = (await invoke('get_outputs')).ticket_counter;
 
   const o = await invoke('get_outputs');

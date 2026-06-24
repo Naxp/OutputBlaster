@@ -1,0 +1,43 @@
+# Task 0005 — Add Rings output to Sonic Dash Extreme + OutputBlaster build fix
+
+- **Date:** 2026-06-24
+- **Goal:** Add real-time ring count display via pointer chain from Cheat Engine; fix OB DLL build toolset
+- **Scope:**
+  - Add `OutputRings` to EOutputs enum and s_outputNames array
+  - Read rings via 6-level pointer chain: base+0x849FEC → +28 → +28 → +20 → +2C → +2C → +E8
+  - Add rings to WinGame frontend (Rust snapshot + HTML display)
+  - Fix vcxproj platform toolset for VS2026 (v145)
+- **Checklist:**
+  - [x] Add OutputRings to Outputs.h enum (before NUM_OUTPUTS)
+  - [x] Add "Rings" to Outputs.cpp s_outputNames array
+  - [x] Add rings pointer chain reading in SonicDashExtreme.cpp
+  - [x] Add rings to OutputsSnapshot struct in WinGame lib.rs
+  - [x] Add rings to get_outputs command in WinGame
+  - [x] Add rings display in index.html (info box)
+  - [x] Add rings value update in main.js
+  - [x] Update simulate command with rings data
+  - [x] Build OutputBlaster DLL (v145 toolset for VS2026)
+  - [x] Deploy DLL to game directory
+  - [x] Rebuild WinGame with rings support
+  - [x] Update governance (changelog, task, audit)
+- **Files reviewed:**
+  - `Output Files/Outputs.h` (EOutputs enum)
+  - `Output Files/Outputs.cpp` (s_outputNames array)
+  - `Game Files/SonicDashExtreme.cpp` (handler + pointer chain)
+  - `win-game/src-tauri/src/lib.rs` (OutputsSnapshot + get_outputs)
+  - `win-game/index.html` (info boxes)
+  - `win-game/src/main.js` (display update)
+  - `OutputBlaster.vcxproj` (platform toolset)
+- **Files changed:**
+  - `Output Files/Outputs.h`
+  - `Output Files/Outputs.cpp`
+  - `Game Files/SonicDashExtreme.cpp`
+  - `win-game/src-tauri/src/lib.rs`
+  - `win-game/index.html`
+  - `win-game/src/main.js`
+  - `OutputBlaster.dll` (rebuilt + deployed)
+  - `changelog.md`
+  - `Audits_index.md`
+- **Audit reference:** audits/2026-06-24-0005-sonic-dash-rings-audit.md
+- **Changelog reference:** changelog.md — Pass 0005: Add Rings output to Sonic Dash Extreme
+- **Completion status:** ✓ Complete

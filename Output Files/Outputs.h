@@ -235,6 +235,7 @@ enum EOutputs
 	OutputCoin1,
 	OutputCoin2,
 	OutputHighScore,
+	OutputRings,
 	NUM_OUTPUTS
 };
 

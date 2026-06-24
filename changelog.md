@@ -67,3 +67,17 @@
   - `win-game/src-tauri/src/lib.rs` (added close_app + simulate Tauri commands)
   - `C:\Users\robon\Desktop\TPBootstrapper\GameProfiles\SonicDashExtreme.xml` (added Enable Outputs field)
 - **Reason for change:** Window was immovable (decorations: false, no drag-region); no way to test UI without live game; OB DLL not injected because GameProfiles template lacked Enable Outputs field
+
+### 2026-06-24 — Pass 0005: Add Rings output to Sonic Dash Extreme
+
+- **Task reference:** 0005
+- **Summary:** Add real-time ring count via 6-level pointer chain from Cheat Engine; add OutputRings to enum; deploy updated DLL; add rings display to WinGame; fix VS2026 build toolset (v145)
+- **Files changed:**
+  - `Output Files/Outputs.h` (added OutputRings before NUM_OUTPUTS)
+  - `Output Files/Outputs.cpp` (added "Rings" to s_outputNames)
+  - `Game Files/SonicDashExtreme.cpp` (added pointer chain + ring count output)
+  - `win-game/src-tauri/src/lib.rs` (added rings to OutputsSnapshot + get_outputs)
+  - `win-game/index.html` (added rings info box)
+  - `win-game/src/main.js` (added rings display update)
+  - `bin/x86/Release/OutputBlaster.dll` (rebuilt + deployed)
+- **Reason for change:** User identified ring count pointer chain in Cheat Engine; need real-time ring display in WinGame; OB DLL needed rebuild for new output

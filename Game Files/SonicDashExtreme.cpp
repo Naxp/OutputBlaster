@@ -6,6 +6,7 @@ static uint32_t g_LastJackpot = 0;
 static uint32_t g_LastCoin1 = 0;
 static uint32_t g_LastCoin2 = 0;
 static uint32_t g_LastHighScore = 0;
+static uint32_t g_LastRings = 0;
 static bool g_Resolved = false;
 static uint32_t* g_TicketAddr = nullptr;
 static uint32_t g_LoopCount = 0;
@@ -201,24 +202,42 @@ static int WindowsLoop()
     uint32_t coins2b = helpers->ReadInt32(0x7A678C, true);
     uint32_t highScore = helpers->ReadInt32(0x84A678, true);
 
+    uint32_t rings = 0;
+    __try
+    {
+        uintptr_t basePtr = helpers->ReadIntPtr(0x849FEC, true);
+        if (basePtr != 0)
+        {
+            uintptr_t ptr1 = helpers->ReadIntPtr(basePtr + 0x28, false);
+            uintptr_t ptr2 = helpers->ReadIntPtr(ptr1 + 0x28, false);
+            uintptr_t ptr3 = helpers->ReadIntPtr(ptr2 + 0x20, false);
+            uintptr_t ptr4 = helpers->ReadIntPtr(ptr3 + 0x2C, false);
+            uintptr_t ptr5 = helpers->ReadIntPtr(ptr4 + 0x2C, false);
+            rings = helpers->ReadInt32(ptr5 + 0xE8, false);
+        }
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {}
+
     Outputs->SetValue(OutputTicketCounter, (UINT8)ticketNow);
     Outputs->SetValue(OutputTicketJackpot, (UINT8)jackpot);
     Outputs->SetValue(OutputCoin1, (UINT8)coins1);
     Outputs->SetValue(OutputCoin2, (UINT8)max(coins2a, coins2b));
     Outputs->SetValue(OutputHighScore, (UINT8)highScore);
+    Outputs->SetValue(OutputRings, (UINT8)rings);
 
-    if (ticketNow != g_LastTicketValue || jackpot != g_LastJackpot || coins1 != g_LastCoin1 || max(coins2a, coins2b) != g_LastCoin2 || highScore != g_LastHighScore)
+    if (ticketNow != g_LastTicketValue || jackpot != g_LastJackpot || coins1 != g_LastCoin1 || max(coins2a, coins2b) != g_LastCoin2 || highScore != g_LastHighScore || rings != g_LastRings)
     {
         g_LoopCount++;
         char buf[256];
-        sprintf_s(buf, "OB: [%u] ticket=%u jackpot=%u coin1=%u coin2a=%u coin2b=%u high=%u",
-            g_LoopCount, ticketNow, jackpot, coins1, coins2a, coins2b, highScore);
+        sprintf_s(buf, "OB: [%u] ticket=%u jackpot=%u coin1=%u coin2a=%u coin2b=%u high=%u rings=%u",
+            g_LoopCount, ticketNow, jackpot, coins1, coins2a, coins2b, highScore, rings);
         OutputDebugStringA(buf);
         g_LastTicketValue = ticketNow;
         g_LastJackpot = jackpot;
         g_LastCoin1 = coins1;
         g_LastCoin2 = max(coins2a, coins2b);
         g_LastHighScore = highScore;
+        g_LastRings = rings;
     }
 
     if (!g_RoundActive && ticketNow > 0)

@@ -53,6 +53,7 @@ struct OutputsSnapshot {
     coin1: i32,
     coin2: i32,
     high_score: i32,
+    rings: i32,
     lamps: HashMap<String, bool>,
 }
 
@@ -83,6 +84,10 @@ fn get_outputs(state: State<AppState>) -> OutputsSnapshot {
         .unwrap_or(0);
     let high_score = outputs
         .get("HighScore")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let rings = outputs
+        .get("Rings")
         .and_then(|v| v.parse().ok())
         .unwrap_or(0);
 
@@ -118,6 +123,7 @@ fn get_outputs(state: State<AppState>) -> OutputsSnapshot {
         coin1,
         coin2,
         high_score,
+        rings,
         lamps,
     }
 }
@@ -190,6 +196,7 @@ fn simulate(state: State<AppState>) -> ConnectionStatus {
     outputs.insert("TicketJackpot".into(), ((t % 10000) + 1000).to_string());
     outputs.insert("Coin1".into(), ((t % 50) + 1).to_string());
     outputs.insert("HighScore".into(), ((t % 999999) + 100000).to_string());
+    outputs.insert("Rings".into(), ((t % 300) + 5).to_string());
     outputs.insert("LampStart".into(), if t % 3 == 0 { "1".into() } else { "0".into() });
     outputs.insert("LampLeader".into(), if t % 5 == 0 { "1".into() } else { "0".into() });
     outputs.insert("LampRed".into(), "1".into());
