@@ -37,6 +37,7 @@
 - **UX overhaul:** WinGame now starts silently with dimmed cabinet, "Waiting" status, no error messages. No longer requires game/OutputBlaster to be running. Dynamic game name display via `mame_start` signal. Added `connected` flag + `get_status` Tauri command. Replaced hardcoded marquee with dynamic `#gameName` element. Added `.right-panel.waiting` CSS for dimmed idle state. Removed `println!` error messages from TCP client.
 - **Debug overlay:** In-memory log ring buffer (512 entries) with `get_logs` Tauri command. Debug panel toggled with F12 showing real-time log output. `println!`/`eprintln!` console logging for terminal visibility.
 - **Bug fixes:** Fixed `initials` borrow-after-move in `submit_score`. Ensured dist/ is always rebuilt before Rust build.
+- **Build system fix:** `build.rs` now auto-detects missing `dist/` and runs `npm run build` before compilation. Previously, `cargo build --release` without `npm run build` first would compile successfully but produce a binary with no embedded frontend → WebView showed "ERR_CONNECTION_REFUSED". Tested end-to-end: removed dist/, ran `cargo build --release` → build.rs auto-built frontend → binary works.
 - **Files changed:**
   - `win-game/simulate.py` (new)
   - `win-game/.gitignore` (new)
@@ -44,6 +45,7 @@
   - `win-game/src/main.js` (rewritten: get_status usage, clean waiting state, no error messages, debug overlay polling, F12 toggle)
   - `win-game/index.html` (edited: dynamic game name span, debug overlay HTML)
   - `win-game/public/styles.css` (edited: waiting state styles, subtle connection status, debug overlay styles)
+  - `win-game/src-tauri/build.rs` (rewritten: auto-build frontend if dist/ missing)
   - `audits/2026-06-24-0003-win-game-tcp-simulator-audit.md` (new)
   - `tasks/0003-win-game-tcp-simulator-and-test.md` (new)
   - `tasks/TASK_INDEX.md` (updated)

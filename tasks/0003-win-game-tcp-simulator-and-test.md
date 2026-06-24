@@ -32,6 +32,8 @@ Create a standalone TCP simulator to test the WinGame arcade display app without
 - [x] Fix `initials` borrow-after-move bug in submit_score
 - [x] Fix dist/ consistency: frontend rebuilt before every Rust build
 - [x] Test end-to-end: standalone launch + simulator mode both verified
+- [x] **CRITICAL FIX:** build.rs now auto-builds frontend if dist/ missing
+- [x] Verify: removed dist/, ran cargo build --release → build.rs auto-built frontend → binary works
 
 ## Files Reviewed
 - `Output Files/NetOutputs.cpp` — TCP protocol format (`SeparatorIdAndValue = " = "`, `FrameEnding = "\r" / "\r\n"`)
