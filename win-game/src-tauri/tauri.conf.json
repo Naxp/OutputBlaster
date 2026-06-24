@@ -18,7 +18,8 @@
         "resizable": false,
         "fullscreen": false,
         "decorations": false,
-        "alwaysOnTop": true
+        "alwaysOnTop": true,
+        "url": "about:blank"
       }
     ],
     "security": {

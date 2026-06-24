@@ -34,6 +34,13 @@ Create a standalone TCP simulator to test the WinGame arcade display app without
 - [x] Test end-to-end: standalone launch + simulator mode both verified
 - [x] **CRITICAL FIX:** build.rs now auto-builds frontend if dist/ missing
 - [x] Verify: removed dist/, ran cargo build --release → build.rs auto-built frontend → binary works
+- [x] **FINAL FIX (self-contained binary):** Eliminated Tauri asset system dependency entirely
+- [x] build.rs reads dist files, combines HTML+CSS+JS, generates `$OUT_DIR/generated.rs`
+- [x] lib.rs includes generated.rs via `include!()` — frontend embedded in Rust binary directly
+- [x] Setup hook writes HTML to disk next to exe, navigates window via `file://` URL
+- [x] Window configured with `url: "about:blank"` to prevent any initial connection error
+- [x] Tested: standalone launch works, HTML file created (21,728 bytes), no connection errors
+- [x] Tested: full pipeline with simulator works
 
 ## Files Reviewed
 - `Output Files/NetOutputs.cpp` — TCP protocol format (`SeparatorIdAndValue = " = "`, `FrameEnding = "\r" / "\r\n"`)

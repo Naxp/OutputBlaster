@@ -38,6 +38,7 @@
 - **Debug overlay:** In-memory log ring buffer (512 entries) with `get_logs` Tauri command. Debug panel toggled with F12 showing real-time log output. `println!`/`eprintln!` console logging for terminal visibility.
 - **Bug fixes:** Fixed `initials` borrow-after-move in `submit_score`. Ensured dist/ is always rebuilt before Rust build.
 - **Build system fix:** `build.rs` now auto-detects missing `dist/` and runs `npm run build` before compilation. Previously, `cargo build --release` without `npm run build` first would compile successfully but produce a binary with no embedded frontend → WebView showed "ERR_CONNECTION_REFUSED". Tested end-to-end: removed dist/, ran `cargo build --release` → build.rs auto-built frontend → binary works.
+- **Self-contained binary:** Eliminated Tauri's embedded asset system entirely. build.rs now reads `dist/index.html`, `dist/styles.css`, and the Vite JS bundle at compile time, inlines the CSS and JS into the HTML, and generates `$OUT_DIR/generated.rs` containing the combined HTML as a Rust constant. `lib.rs` includes this via `include!()`. At runtime, the setup hook writes the HTML to disk next to the exe and navigates the window to `file://` URL. Window config uses `"url": "about:blank"` to prevent any initial load attempt. No dependency on Tauri's `frontendDist` asset serving. No localhost connection needed — the app is 100% self-contained in a single binary.
 - **Files changed:**
   - `win-game/simulate.py` (new)
   - `win-game/.gitignore` (new)
@@ -45,7 +46,9 @@
   - `win-game/src/main.js` (rewritten: get_status usage, clean waiting state, no error messages, debug overlay polling, F12 toggle)
   - `win-game/index.html` (edited: dynamic game name span, debug overlay HTML)
   - `win-game/public/styles.css` (edited: waiting state styles, subtle connection status, debug overlay styles)
-  - `win-game/src-tauri/build.rs` (rewritten: auto-build frontend if dist/ missing)
+  - `win-game/src-tauri/build.rs` (rewritten: generate embedded HTML Rust source)
+  - `win-game/src-tauri/src/lib.rs` (edited: include! generated HTML, write to disk, navigate file:// URL)
+  - `win-game/src-tauri/tauri.conf.json` (edited: added url: about:blank to prevent initial load)
   - `audits/2026-06-24-0003-win-game-tcp-simulator-audit.md` (new)
   - `tasks/0003-win-game-tcp-simulator-and-test.md` (new)
   - `tasks/TASK_INDEX.md` (updated)

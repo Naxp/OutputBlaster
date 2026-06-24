@@ -158,7 +158,6 @@ fn submit_score(
         tickets,
         date: now,
     };
-    log_info(&state, &format!("Score submitted: {} {} {}", initials, score, tickets));
     let mut scores = state.scores.lock().unwrap();
     scores.push(entry);
     log_info(&state, &format!("Score submitted: {} {} {}", initials, score, tickets));
@@ -264,6 +263,24 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
     }
 }
 
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+
+fn write_html() -> Option<String> {
+    let path = std::env::current_exe().ok()?
+        .parent()?
+        .join("wingame.html");
+    match std::fs::write(&path, HTML) {
+        Ok(_) => {
+            println!("[WinGame] HTML written to: {}", path.display());
+            Some(path.to_string_lossy().to_string())
+        }
+        Err(e) => {
+            eprintln!("[WinGame] ERROR: Failed to write HTML: {}", e);
+            None
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let scores = load_scores();
@@ -293,6 +310,13 @@ pub fn run() {
             round_ended,
         ])
         .setup(|app| {
+            if let Some(path) = write_html() {
+                if let Some(window) = app.get_webview_window("main") {
+                    let url = format!("file:///{}", path.replace('\\', "/"));
+                    println!("[WinGame] Setting window URL to: {}", url);
+                    let _ = window.navigate(tauri::Url::parse(&url).unwrap());
+                }
+            }
             let handle = app.handle().clone();
             println!("[WinGame] Setup complete — spawning TCP client loop");
             tauri::async_runtime::spawn(async move {
