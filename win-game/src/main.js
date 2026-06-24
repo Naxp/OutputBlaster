@@ -12,6 +12,37 @@ let particles = [];
 let animFrame = null;
 let roundEndPending = false;
 
+// Per-game stat config: label → output key mapping
+const STAT_CONFIGS = {
+  'Sonic Dash Extreme': [
+    { label: 'COINS', key: 'coin1' },
+    { label: 'JACKPOT', key: 'ticket_jackpot' },
+    { label: 'HIGH SCORE', key: 'high_score' },
+    { label: 'RINGS', key: 'rings' },
+  ],
+  'Frogger': [
+    { label: 'COINS P1', key: 'coin1' },
+    { label: 'COINS P2', key: 'coin2' },
+    { label: 'TICKETS', key: 'ticket_counter' },
+    { label: 'TOP SCORE', key: 'high_score' },
+  ],
+  'Ghostbusters': [
+    { label: 'COINS P1', key: 'coin1' },
+    { label: 'GHOSTS P1', key: 'high_score' },
+    { label: 'COINS P2', key: 'coin2' },
+    { label: 'GHOSTS P2', key: 'rings' },
+  ],
+};
+
+function getDefaultStatConfig() {
+  return [
+    { label: 'COINS', key: 'coin1' },
+    { label: 'JACKPOT', key: 'ticket_jackpot' },
+    { label: 'HIGH SCORE', key: 'high_score' },
+    { label: 'TICKETS', key: 'ticket_counter' },
+  ];
+}
+
 function initCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -204,21 +235,41 @@ async function updateDisplay() {
   document.getElementById('arcadeView').classList.toggle('waiting', !connected);
 
   if (!connected) {
-    document.getElementById('coinVal').textContent = '0';
-    document.getElementById('jackpotVal').textContent = '0';
-    document.getElementById('hsVal').textContent = '0';
-    document.getElementById('ringsVal').textContent = '0';
     document.getElementById('ticketVal').textContent = '0';
+    document.querySelectorAll('.info-val').forEach(el => { if (el.id && el.id.startsWith('stat_')) el.textContent = '0'; });
     document.querySelectorAll('.color-led').forEach(el => { el.style.background = '#1a1a3a'; el.style.boxShadow = 'none'; el.classList.remove('on'); });
+    document.querySelectorAll('.coin-button').forEach(el => el.classList.remove('coin-active'));
+    document.querySelector('.start-button')?.classList.remove('start-active');
     return;
   }
 
   const o = await invoke('get_outputs');
-  document.getElementById('coinVal').textContent = o.coin1;
-  document.getElementById('jackpotVal').textContent = o.ticket_jackpot;
-  document.getElementById('hsVal').textContent = o.high_score;
-  document.getElementById('ringsVal').textContent = o.rings;
   document.getElementById('ticketVal').textContent = o.ticket_counter;
+
+  // Dynamic per-game stat boxes
+  const config = STAT_CONFIGS[gameName] || getDefaultStatConfig();
+  const statContainer = document.getElementById('gameStats');
+  if (statContainer) {
+    statContainer.innerHTML = '';
+    config.forEach(stat => {
+      const box = document.createElement('div');
+      box.className = 'info-box';
+      box.innerHTML = `<span class="info-label">${stat.label}</span><span class="info-val" id="stat_${stat.key}">0</span>`;
+      statContainer.appendChild(box);
+    });
+  }
+  config.forEach(stat => {
+    const el = document.getElementById(`stat_${stat.key}`);
+    if (el) el.textContent = o[stat.key] !== undefined ? o[stat.key] : '0';
+  });
+
+  // Coin button lighting
+  document.querySelectorAll('.coin-button').forEach(btn => {
+    btn.classList.toggle('coin-active', parseInt(o.coin1) > 0 || parseInt(o.coin2) > 0);
+  });
+  // Start button lighting
+  const startBtn = document.querySelector('.start-button');
+  if (startBtn) startBtn.classList.toggle('start-active', o.lamps.LampStart);
 
   // Billboard
   updateLED('billboardOut', 'Billboard Red', o.lamps['Billboard Red'], '#ff2244');

@@ -69,6 +69,8 @@ along with Output Blaster.If not, see < https://www.gnu.org/licenses/>.*/
 #include "Game Files/TransformersShadowsRising.h"
 #include "Game Files/SonicAllStarsRacing.h"
 #include "Game Files/SonicDashExtreme.h"
+#include "Game Files/Frogger.h"
+#include "Game Files/Ghostbusters.h"
 #include "Game Files/VirtuaTennis4.h"
 #include "Game Files/WackyRaces.h"
 #include "Game Files/WMMT5.h"
@@ -247,6 +249,12 @@ DWORD WINAPI OutputsLoop(LPVOID lpParam)
 	case 0xf4b75de0:
 		game = new SonicDashExtreme;
 		break;
+	case 0xf4b75de1:  // TODO: confirm Frogger CRC (sdaemon.exe)
+		game = new Frogger;
+		break;
+	case 0xf4b75de2:  // TODO: confirm Ghostbusters CRC
+		game = new Ghostbusters;
+		break;
 
 	default:
 		break;
@@ -334,12 +342,10 @@ DWORD WINAPI OutputsLoop(LPVOID lpParam)
 	}
 	if (game == 0)
 	{
-#ifdef _DEBUG
 		static char test[256];
 		memset(test, 0, 256);
-		sprintf(test, "New CRC: %08x not implemented", newCrcResult);
+		sprintf(test, "OB: No game match — CRC: %08x — add to dllmain.cpp", newCrcResult);
 		OutputDebugStringA(test);
-#endif
 	}
 	return 0;
 }

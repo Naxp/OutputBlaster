@@ -101,3 +101,16 @@
   - `audits/2026-06-24-0006-broadcast-outputs-wingame-ui-redesign.md` (new)
   - `tasks/0006-broadcast-outputs-wingame-ui-redesign.md` (new)
 - **Reason for change:** Enable OutputHooker + WinGame simultaneously. Fix port conflicts. Improve LED visualization to match physical hardware layout. Fix stale frontend builds in WinGame.
+
+### 2026-06-24 — Task 0007: Frogger + Ghostbusters Support, WinGame Modular Stats & Button Lighting
+- **Summary:** Added Frogger and Ghostbusters game handlers. Made WinGame stat boxes modular per game. Added coin/start button lighting. Removed _DEBUG guard on CRC output.
+- **Files changed:**
+  - `Game Files/Frogger.h` (new)
+  - `Game Files/Frogger.cpp` (new)
+  - `Game Files/Ghostbusters.h` (new)
+  - `Game Files/Ghostbusters.cpp` (new)
+  - `dllmain.cpp` (modified: adds Frogger/Ghostbusters includes + CRC cases; removed _DEBUG guard on CRC output)
+  - `win-game/index.html` (modified: replaced hardcoded info boxes with dynamic #gameStats container)
+  - `win-game/src/main.js` (modified: added STAT_CONFIGS lookup table, dynamic stat rendering, coin/start button lighting)
+  - `win-game/src/styles.css` (modified: added .coin-active, .start-active, waiting-state button dimming)
+- **Reason for change:** Add support for two new arcade games. Make WinGame display relevant stats per game. Provide visual feedback for coin/start buttons.
