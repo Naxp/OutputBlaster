@@ -249,7 +249,7 @@ DWORD WINAPI OutputsLoop(LPVOID lpParam)
 	case 0xf4b75de0:
 		game = new SonicDashExtreme;
 		break;
-	case 0xf4b75de1:  // TODO: confirm Frogger CRC (sdaemon.exe)
+	case 0x8070240b:  // Frogger (sdaemon.exe)
 		game = new Frogger;
 		break;
 	case 0xf4b75de2:  // TODO: confirm Ghostbusters CRC
