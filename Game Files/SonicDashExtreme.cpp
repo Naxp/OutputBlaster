@@ -15,6 +15,7 @@ static bool g_RoundActive = false;
 static uint32_t g_PeakTicket = 0;
 static uint32_t g_RoundNumber = 0;
 static bool g_BossThisRound = false;
+static bool g_StartPressed = false;
 static char g_JsonPath[MAX_PATH] = {};
 
 static HANDLE g_JvsMap = NULL;
@@ -77,6 +78,13 @@ static void JvsPoll()
     {
         uint8_t current[64];
         memcpy(current, g_JvsData, 64);
+
+        if ((current[8] & 0x01) && !(g_JvsLast[8] & 0x01))
+        {
+            g_StartPressed = true;
+            OutputDebugStringA("OB: P1 Start detected");
+        }
+
         if (memcmp(current, g_JvsLast, 64) != 0)
         {
             char diff[128] = {};
@@ -225,6 +233,13 @@ static int WindowsLoop()
     Outputs->SetValue(OutputHighScore, highScore);
     Outputs->SetValue(OutputRings, rings);
 
+    // Detect coin insertion (logging only)
+    bool coinInserted = coins1 > g_LastCoin1 || max(coins2a, coins2b) > g_LastCoin2;
+    if (coinInserted)
+    {
+        OutputDebugStringA("OB: Coins inserted");
+    }
+
     if (ticketNow != g_LastTicketValue || jackpot != g_LastJackpot || coins1 != g_LastCoin1 || max(coins2a, coins2b) != g_LastCoin2 || highScore != g_LastHighScore || rings != g_LastRings)
     {
         g_LoopCount++;
@@ -240,9 +255,10 @@ static int WindowsLoop()
         g_LastRings = rings;
     }
 
-    if (!g_RoundActive && ticketNow > 0)
+    if (!g_RoundActive && ticketNow > 0 && g_StartPressed)
     {
         g_RoundActive = true;
+        g_StartPressed = false;
         g_PeakTicket = ticketNow;
         g_BossThisRound = false;
         g_RoundNumber++;
@@ -289,6 +305,7 @@ void SonicDashExtreme::OutputsGameLoop()
 {
     if (!init)
     {
+        AutoLaunchWinGame();
         Outputs = CreateOutputsFromConfig();
         m_game.name = "Sonic Dash Extreme";
         Outputs->SetGame(m_game);

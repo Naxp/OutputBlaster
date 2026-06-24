@@ -1,3 +1,4 @@
+import './styles.css';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
@@ -9,6 +10,7 @@ let canvas = document.getElementById('fireworksCanvas');
 let ctx = canvas.getContext('2d');
 let particles = [];
 let animFrame = null;
+let roundEndPending = false;
 
 function initCanvas() {
   canvas.width = window.innerWidth;
@@ -68,7 +70,7 @@ function startFireworks() {
 }
 
 function spawnTicketAnimation(finalTickets) {
-  if (ticketAnimActive) return;
+  if (ticketAnimActive || finalTickets <= 0) return;
   ticketAnimActive = true;
   const ticketOut = document.getElementById('ticketOut');
   const ticketVal = document.getElementById('ticketVal');
@@ -76,12 +78,14 @@ function spawnTicketAnimation(finalTickets) {
   const interval = setInterval(() => {
     current = Math.max(0, current - Math.ceil(current / 8) - 1);
     ticketVal.textContent = current;
-    const ticket = document.createElement('div');
-    ticket.className = 'ticket-falling';
-    ticket.style.left = Math.random() * 80 + 10 + '%';
-    ticket.style.animationDuration = (1.5 + Math.random()) + 's';
-    ticketOut.appendChild(ticket);
-    setTimeout(() => ticket.remove(), 3000);
+    for (let i = 0; i < 3; i++) {
+      const ticket = document.createElement('div');
+      ticket.className = 'ticket-falling';
+      ticket.style.left = Math.random() * 80 + 10 + '%';
+      ticket.style.animationDuration = (1.5 + Math.random()) + 's';
+      ticketOut.appendChild(ticket);
+      setTimeout(() => ticket.remove(), 3000);
+    }
     if (current <= 0) {
       clearInterval(interval);
       ticketVal.textContent = '0';
@@ -89,9 +93,7 @@ function spawnTicketAnimation(finalTickets) {
         startFireworks();
         const popup = document.createElement('div');
         popup.className = 'score-popup';
-        popup.textContent = `WINNER! ${finalTickets} TICKETS!`;
-        popup.style.left = '50%'; popup.style.top = '40%';
-        popup.style.transform = 'translateX(-50%)';
+        popup.textContent = `${finalTickets} TICKETS!`;
         document.body.appendChild(popup);
         setTimeout(() => popup.remove(), 3000);
       }, 500);
@@ -111,18 +113,69 @@ function updateScoreList(scores) {
   });
 }
 
-function updateLamp(id, active) {
-  const el = document.getElementById(id);
-  if (el) el.classList.toggle('active', active);
+function categoryColor(name, value) {
+  if (!value || value === '0') return null;
+  if (name.includes('Red')) return '#ff2244';
+  if (name.includes('Green')) return '#22ff44';
+  if (name.includes('Blue')) return '#2288ff';
+  if (name.includes('Yellow')) return '#ffdd00';
+  if (name.includes('White')) return '#ffffff';
+  if (name.includes('Cyan')) return '#00ffff';
+  if (name.includes('Magneta') || name.includes('Magenta')) return '#ff00ff';
+  if (name.includes('Orange')) return '#ff8800';
+  if (name.includes('Purple')) return '#aa44ff';
+  return '#888888';
 }
 
-function setCabinetDimmed(dimmed) {
-  document.getElementById('arcadeView').classList.toggle('waiting', dimmed);
+function updateLED(containerId, name, active, color) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  let led = container.querySelector(`[data-name="${name}"]`);
+  if (!led) {
+    led = document.createElement('span');
+    led.className = 'color-led';
+    led.dataset.name = name;
+    led.title = name;
+    container.appendChild(led);
+  }
+  if (active) {
+    led.style.background = color || categoryColor(name, '1');
+    led.style.boxShadow = `0 0 12px ${color || categoryColor(name, '1')}`;
+    led.classList.add('on');
+  } else {
+    led.style.background = '#1a1a3a';
+    led.style.boxShadow = 'none';
+    led.classList.remove('on');
+  }
 }
 
-function setGameName(name) {
-  const el = document.getElementById('gameName');
-  if (el) el.textContent = name || '---';
+function buildMiscBox(outputs) {
+  const container = document.getElementById('miscOut');
+  if (!container) return;
+  const known = new Set([
+    'LampStart','LampLeader','LampRed','LampGreen','LampBlue',
+    'Billboard Red','Billboard Green','Billboard Blue',
+    'WooferLEDRed','WooferLEDGreen','WooferLEDBlue',
+    'SideLEDRed','SideLEDGreen','SideLEDBlue',
+    'ItemLEDRed','ItemLEDGreen','ItemLEDBlue',
+    'TicketCounter','TicketJackpot','Coin1','Coin2','HighScore','Rings',
+    'pause','mame_start','mame_stop',
+  ]);
+  container.innerHTML = '';
+  for (const [name, val] of Object.entries(outputs)) {
+    if (known.has(name) || val === '0' || val === '0') continue;
+    const led = document.createElement('span');
+    led.className = 'color-led misc-led';
+    led.title = `${name} = ${val}`;
+    const c = categoryColor(name, val);
+    led.style.background = c || '#888';
+    if (c) led.style.boxShadow = `0 0 8px ${c}`;
+    led.classList.add('on');
+    container.appendChild(led);
+  }
+  if (!container.children.length) {
+    container.innerHTML = '<span class="misc-empty">—</span>';
+  }
 }
 
 async function updateDisplay() {
@@ -132,7 +185,7 @@ async function updateDisplay() {
     const status = await invoke('get_status');
     connected = status.connected;
     gameName = status.game_name;
-    setGameName(gameName);
+    document.getElementById('gameName').textContent = gameName || '---';
   } catch (_) { connected = false; }
 
   const connStatus = document.getElementById('connStatus');
@@ -145,10 +198,10 @@ async function updateDisplay() {
   } else {
     connStatus.textContent = 'Waiting';
     connStatus.className = 'connection-status';
-    statusBar.textContent = 'Waiting for game (port 8000)...';
+    statusBar.textContent = 'Waiting for game (port 37520)...';
     statusBar.className = 'status-bar';
   }
-  setCabinetDimmed(!connected);
+  document.getElementById('arcadeView').classList.toggle('waiting', !connected);
 
   if (!connected) {
     document.getElementById('coinVal').textContent = '0';
@@ -156,13 +209,7 @@ async function updateDisplay() {
     document.getElementById('hsVal').textContent = '0';
     document.getElementById('ringsVal').textContent = '0';
     document.getElementById('ticketVal').textContent = '0';
-    updateLamp('lampStart', false);
-    updateLamp('lampLeader', false);
-    document.getElementById('billboardLed').classList.remove('active');
-    document.getElementById('marqueeLed').classList.remove('active');
-    document.getElementById('sideLeds').querySelectorAll('.led-strip').forEach(el => el.classList.remove('active'));
-    document.getElementById('wooferLed').classList.remove('active');
-    document.getElementById('itemLed').classList.remove('active');
+    document.querySelectorAll('.color-led').forEach(el => { el.style.background = '#1a1a3a'; el.style.boxShadow = 'none'; el.classList.remove('on'); });
     return;
   }
 
@@ -173,34 +220,88 @@ async function updateDisplay() {
   document.getElementById('ringsVal').textContent = o.rings;
   document.getElementById('ticketVal').textContent = o.ticket_counter;
 
-  updateLamp('lampStart', o.lamps.LampStart);
-  updateLamp('lampLeader', o.lamps.LampLeader);
-  document.getElementById('billboardLed').classList.toggle('active',
-    o.lamps['Billboard Red'] || o.lamps['Billboard Green'] || o.lamps['Billboard Blue']);
-  document.getElementById('marqueeLed').classList.toggle('active',
-    o.lamps.LampRed || o.lamps.LampGreen || o.lamps.LampBlue);
-  document.getElementById('sideLeds').querySelectorAll('.led-strip').forEach(el => el.classList.toggle('active',
-    o.lamps.SideLEDRed || o.lamps.SideLEDGreen || o.lamps.SideLEDBlue));
-  document.getElementById('wooferLed').classList.toggle('active',
-    o.lamps.WooferLEDRed || o.lamps.WooferLEDGreen || o.lamps.WooferLEDBlue);
-  document.getElementById('itemLed').classList.toggle('active',
-    o.lamps.ItemLEDRed || o.lamps.ItemLEDGreen || o.lamps.ItemLEDBlue);
+  // Billboard
+  updateLED('billboardOut', 'Billboard Red', o.lamps['Billboard Red'], '#ff2244');
+  updateLED('billboardOut', 'Billboard Green', o.lamps['Billboard Green'], '#22ff44');
+  updateLED('billboardOut', 'Billboard Blue', o.lamps['Billboard Blue'], '#2288ff');
+  // Billboard triangle color
+  const bShape = document.getElementById('billboardShape');
+  if (bShape) {
+    bShape.classList.remove('active-red','active-green','active-blue','active-mixed');
+    const r = o.lamps['Billboard Red'];
+    const g = o.lamps['Billboard Green'];
+    const b = o.lamps['Billboard Blue'];
+    const activeCount = [r,g,b].filter(Boolean).length;
+    if (activeCount >= 2) bShape.classList.add('active-mixed');
+    else if (r) bShape.classList.add('active-red');
+    else if (g) bShape.classList.add('active-green');
+    else if (b) bShape.classList.add('active-blue');
+  }
+
+  // Lamps
+  updateLED('lampsOut', 'LampStart', o.lamps.LampStart, '#00ff44');
+  updateLED('lampsOut', 'LampLeader', o.lamps.LampLeader, '#ffaa00');
+  updateLED('lampsOut', 'LampRed', o.lamps.LampRed, '#ff2244');
+  updateLED('lampsOut', 'LampGreen', o.lamps.LampGreen, '#22ff44');
+  updateLED('lampsOut', 'LampBlue', o.lamps.LampBlue, '#2288ff');
+
+  // Woofers
+  updateLED('wooferOut', 'WooferLEDRed', o.lamps.WooferLEDRed, '#ff2244');
+  updateLED('wooferOut', 'WooferLEDGreen', o.lamps.WooferLEDGreen, '#22ff44');
+  updateLED('wooferOut', 'WooferLEDBlue', o.lamps.WooferLEDBlue, '#2288ff');
+  // Woofer speaker glow
+  document.querySelectorAll('.woofer').forEach(el => {
+    el.classList.toggle('active', o.lamps.WooferLEDRed || o.lamps.WooferLEDGreen || o.lamps.WooferLEDBlue);
+  });
+
+  // Side LEDs
+  updateLED('sideLeftOut', 'SideLEDRed', o.lamps.SideLEDRed, '#ff2244');
+  updateLED('sideLeftOut', 'SideLEDGreen', o.lamps.SideLEDGreen, '#22ff44');
+  updateLED('sideLeftOut', 'SideLEDBlue', o.lamps.SideLEDBlue, '#2288ff');
+  updateLED('sideRightOut', 'SideLEDRed', o.lamps.SideLEDRed, '#ff2244');
+  updateLED('sideRightOut', 'SideLEDGreen', o.lamps.SideLEDGreen, '#22ff44');
+  updateLED('sideRightOut', 'SideLEDBlue', o.lamps.SideLEDBlue, '#2288ff');
+
+  // Item LEDs
+  updateLED('itemOut', 'ItemLEDRed', o.lamps.ItemLEDRed, '#ff2244');
+  updateLED('itemOut', 'ItemLEDGreen', o.lamps.ItemLEDGreen, '#22ff44');
+  updateLED('itemOut', 'ItemLEDBlue', o.lamps.ItemLEDBlue, '#2288ff');
+
+  // Marquee bar
+  const marqueeBar = document.getElementById('marqueeBar');
+  if (marqueeBar) {
+    marqueeBar.classList.toggle('active', o.lamps.LampRed || o.lamps.LampGreen || o.lamps.LampBlue);
+  }
+
+  // Misc - any output not in our layout, showing correct color
+  buildMiscBox(o.raw);
 
   updateScoreList(await invoke('get_scores'));
 
-  const roundData = await invoke('round_ended');
-  if (roundData) {
-    const [score, tickets] = roundData;
-    document.getElementById('modalScore').textContent = score.toLocaleString();
-    document.getElementById('modalTickets').textContent = tickets.toLocaleString();
-    document.getElementById('initialsModal').style.display = 'flex';
-    document.getElementById('initialsInput').value = '';
-    document.getElementById('initialsInput').focus();
-    spawnTicketAnimation(tickets);
+  // Round end detection
+  if (!roundEndPending) {
+    const roundData = await invoke('round_ended');
+    if (roundData) {
+      roundEndPending = true;
+      const [score, tickets] = roundData;
+      document.getElementById('modalScore').textContent = score.toLocaleString();
+      document.getElementById('modalTickets').textContent = tickets.toLocaleString();
+      document.getElementById('initialsModal').style.display = 'flex';
+      document.getElementById('initialsInput').value = '';
+      document.getElementById('initialsInput').focus();
+      spawnTicketAnimation(tickets);
+    }
+  }
+
+  // Check coins = 0 for initials prompt
+  const coinVal = parseInt(o.coin1) + parseInt(o.coin2);
+  if (coinVal === 0 && connected) {
+    document.getElementById('coinsExhausted').style.display = 'block';
+  } else {
+    document.getElementById('coinsExhausted').style.display = 'none';
   }
 }
 
-// --- Debug overlay ---
 async function updateDebugLog() {
   if (!debugVisible) return;
   try {
@@ -221,20 +322,16 @@ document.addEventListener('keydown', (e) => {
     document.getElementById('debugOverlay').style.display = debugVisible ? 'flex' : 'none';
     if (debugVisible) updateDebugLog();
   }
+  if (e.key === 'Escape') {
+    document.getElementById('initialsModal').style.display = 'none';
+  }
 });
 
-// --- Window controls ---
 const appWindow = getCurrentWindow();
 
-document.getElementById('closeBtn').addEventListener('click', () => {
-  appWindow.close();
-});
+document.getElementById('closeBtn').addEventListener('click', () => appWindow.close());
+document.getElementById('minimizeBtn').addEventListener('click', () => appWindow.minimize());
 
-document.getElementById('minimizeBtn').addEventListener('click', () => {
-  appWindow.minimize();
-});
-
-// --- Drag via Tauri API (works with decorations:false + file://) ---
 const dragRegion = document.getElementById('dragRegion');
 if (dragRegion) {
   dragRegion.addEventListener('mousedown', (e) => {
@@ -243,7 +340,7 @@ if (dragRegion) {
   });
 }
 
-// --- Submit initials ---
+// Submit initials
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const input = document.getElementById('initialsInput');
   const initials = input.value.toUpperCase().slice(0, 3).padEnd(3, ' ');
@@ -251,6 +348,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   const tickets = parseInt(document.getElementById('modalTickets').textContent.replace(/,/g,'')) || 0;
   if (initials.trim()) updateScoreList(await invoke('submit_score', { initials, score, tickets }));
   document.getElementById('initialsModal').style.display = 'none';
+  roundEndPending = false;
 });
 document.getElementById('initialsInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('submitBtn').click();
@@ -259,15 +357,31 @@ document.getElementById('initialsInput').addEventListener('input', (e) => {
   e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
 });
 
-// --- Simulate button ---
+// Change initials button
+document.getElementById('changeInitialsBtn').addEventListener('click', () => {
+  const input = document.getElementById('initialsInput');
+  input.value = '';
+  document.getElementById('initialsModal').style.display = 'flex';
+  input.focus();
+});
+
+// Simulate
 document.getElementById('simulateBtn').addEventListener('click', async () => {
   document.getElementById('simulateBtn').textContent = 'Simulating...';
   await invoke('simulate');
+  roundEndPending = false;
   await updateDisplay();
   document.getElementById('simulateBtn').textContent = 'Sim Data';
 });
 
-// --- Start ---
+document.getElementById('initialsModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('initialsModal').style.display = 'none';
+    roundEndPending = false;
+  }
+});
+
+// Start
 pollInterval = setInterval(updateDisplay, 200);
 debugInterval = setInterval(updateDebugLog, 500);
 updateDisplay();

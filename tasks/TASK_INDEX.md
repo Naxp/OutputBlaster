@@ -9,3 +9,4 @@
 | 0003 | 2026-06-24 | WinGame TCP Simulator and Pipeline Test | Completed | `tasks/0003-win-game-tcp-simulator-and-test.md` |
 | 0004 | 2026-06-24 | WinGame drag/simulate + GameProfiles XML fix | Completed | `tasks/0004-win-game-drag-simulate.md` |
 | 0005 | 2026-06-24 | Add Rings output to Sonic Dash Extreme | Completed | `tasks/0005-sonic-dash-rings-output.md` |
+| 0006 | 2026-06-24 | Broadcast Outputs, WinGame UI Redesign & Port Change | Completed | `tasks/0006-broadcast-outputs-wingame-ui-redesign.md` |

@@ -1,8 +1,8 @@
 # OutputBlaster — Master Reference Map
 
-> **Version:** 1.0  
-> **Last updated:** 2026-06-23  
-> **Purpose:** Complete reference for all outputs, memory maps, architecture, and integration patterns across all games.
+> **Version:** 2.0  
+> **Last updated:** 2026-06-24  
+> **Purpose:** Complete reference for all outputs, memory maps, architecture, integration patterns, and new-game cheat sheet.
 
 ---
 
@@ -18,9 +18,12 @@
 8. [How to Add Extra Outputs to an Existing Game](#8-how-to-add-extra-outputs-to-an-existing-game)
 9. [TeknoParrot Integration Guide](#9-teknoparrot-integration-guide)
 10. [OutputHooker Architecture & Connection](#10-outputhooker-architecture--connection)
-11. [Memory Access Helpers Reference](#11-memory-access-helpers-reference)
-12. [CRC32 Game Detection Table](#12-crc32-game-detection-table)
-13. [Appendices](#13-appendices)
+11. [WinGame Arcade Display](#11-wingame-arcade-display)
+12. [Memory Access Helpers Reference](#12-memory-access-helpers-reference)
+13. [CRC32 Game Detection Table](#13-crc32-game-detection-table)
+14. [Complete System Integration Cheat Sheet](#14-complete-system-integration-cheat-sheet)
+15. [New Game Addition Checklist](#15-new-game-addition-checklist)
+16. [Appendices](#16-appendices)
 
 ---
 
@@ -28,12 +31,13 @@
 
 OutputBlaster is an open-source C++ DLL (GPL v3) that adds output support (LEDs, FFB, ticket counters, coin counters, numeric displays) to arcade games running under TeknoParrot emulation.
 
-### Two-Component System
+### Three-Component System
 
 | Component | Type | Role |
 |-----------|------|------|
-| **OutputBlaster** (`OutputBlaster.dll`) | C++ DLL (injected) | Reads game memory at CRC-detected offsets, publishes output values |
-| **OutputHooker** (`OutputHooker.exe`) | C++ Qt6 app (standalone) | Listens for outputs (via WinMsg or TCP), routes to hardware/drivers, provides visual display |
+| **OutputBlaster** (`OutputBlaster.dll`) | C++ DLL (injected by TeknoParrot) | Reads game memory at CRC-detected offsets, publishes output values via dual backends |
+| **OutputHooker** (`OutputHooker.exe`) | C++ Qt6 app (standalone) | Receives outputs via WinMsg protocol, routes to hardware/drivers, provides visual display |
+| **WinGame** (`win-game.exe`) | Rust/Tauri app (standalone) | Receives outputs via TCP, renders arcade cabinet display with LEDs, tickets, high scores |
 
 ### Key Concepts
 
@@ -63,50 +67,41 @@ OutputBlaster is an open-source C++ DLL (GPL v3) that adds output support (LEDs,
                                    │
                                    │ OutputBlaster.dll injected by TeknoParrot
                                    ▼
-                  ┌──────────────────────────────────────┐
-                  │        OutputBlaster.dll              │
-                  │                                       │
-                  │  1. DllMain → CreateThread(OutputsLoop│
-                  │  2. CRC32 detection → switch(game)    │
-                  │  3. Game::OutputsGameLoop()            │
-                  │     → Create polling thread           │
-                  │     → ReadByte/ReadInt32 at offsets   │
-                  │     → Outputs->SetValue(name, value)  │
-                  │                                       │
-                  │  Output backends:                     │
-                  │  ┌─────────────┐  ┌──────────────┐   │
-                  │  │  WinOutputs  │  │  NetOutputs  │   │
-                  │  │  (Windows    │  │  (TCP 8000 + │   │
-                  │  │   Messages)  │  │   UDP 8001)  │   │
-                  │  └──────┬──────┘  └──────┬───────┘   │
-                  └─────────┼─────────────────┼───────────┘
-                            │                 │
-                            ▼                 ▼
-              ┌─────────────────────┐  ┌──────────────────────┐
-              │    OutputHooker     │  │   OutputHooker       │
-              │   WinMsgModule      │  │  TCPSocketModule     │
-              │   (MAMEHooker       │  │  (TCP client)        │
-              │    protocol)        │  │                      │
-              └──────────┬──────────┘  └──────────┬───────────┘
-                         │                         │
-                         └──────────┬──────────────┘
-                                    ▼
-                     ┌─────────────────────────────┐
-                     │    OutputHooker Core         │
-                     │                              │
-                     │   Receives signal=value      │
-                     │   Looks up INI commands      │
-                     │   Routes to:                 │
-                     │    ├── LED-Wiz               │
-                     │    ├── PacDrive/Ultimarc     │
-                     │    ├── SDL3 controllers      │
-                     │    ├── HID devices            │
-                     │    ├── COM ports              │
-                     │    ├── TCP/UDP/HTTP          │
-                     │    ├── Sound effects          │
-                     │    └── Application launch    │
-                     └─────────────────────────────┘
-```
+                  ┌───────────────────────────────────────────┐
+                  │           OutputBlaster.dll                │
+                  │                                            │
+                  │  1. DllMain → CreateThread(OutputsLoop)   │
+                  │  2. CRC32 detection → switch(game)        │
+                  │  3. Game::OutputsGameLoop()                │
+                  │     → Create polling thread               │
+                  │     → ReadByte/ReadInt32 at offsets       │
+                  │     → Outputs->SetValue(name, value)      │
+                  │                                            │
+                  │  CBroadcastOutputs forwards to BOTH:      │
+                  │  ┌──────────────┐  ┌──────────────────┐  │
+                  │  │  CWinOutputs  │  │  CNetOutputs     │  │
+                  │  │  (WinMsg)     │  │  (TCP 37520 +    │  │
+                  │  │               │  │   UDP 37521)     │  │
+                  │  └──────┬───────┘  └────────┬─────────┘  │
+                  └─────────┼────────────────────┼────────────┘
+                            │                    │
+                            ▼                    ▼
+              ┌──────────────────────┐  ┌──────────────────────────────┐
+              │    OutputHooker      │  │     WinGame (win-game.exe)   │
+              │   WinMsgModule       │  │                              │
+              │   (MAMEHooker        │  │  TCP client on 127.0.0.1:   │
+              │    protocol)         │  │  37520                       │
+              │                      │  │                              │
+              │  Routes to:          │  │  Renders arcade cabinet:    │
+              │   ├─ LED-Wiz         │  │   ├─ Billboard triangle     │
+              │   ├─ PacDrive        │  │   ├─ Speaker woofers        │
+              │   ├─ SDL3 controllers│  │   ├─ Side LEDs L/R          │
+              │   ├─ HID devices     │  │   ├─ Item LEDs              │
+              │   ├─ COM ports       │  │   ├─ Misc box               │
+              │   ├─ TCP/UDP/HTTP    │  │   ├─ Ticket counter + anim  │
+              │   └─ Sound effects   │  │   ├─ High score leaderboard │
+              └──────────────────────┘  │   └─ Initials modal         │
+                                        └──────────────────────────────┘
 
 ### Key File Relationships
 
@@ -596,7 +591,12 @@ DllMain (DLL_PROCESS_ATTACH)
 ## 6. OutputBlaster.ini Configuration
 
 ### File Location
-Placed in the **game root directory** alongside `OutputBlaster.dll`.
+Placed in **BOTH** the game root directory AND the `exe\` subdirectory (the DLL may load with CWD set to either location).
+
+### Reason for Dual Placement
+The DLL uses `settingsFilename = TEXT(".\\OutputBlaster.ini")` which is relative to the current working directory. TeknoParrot may set CWD to either the game root or the `exe/` subdirectory. To guarantee the INI is found, copy it to both:
+- `<game_root>\OutputBlaster.ini`
+- `<game_root>\exe\OutputBlaster.ini`
 
 ### Format
 
@@ -610,20 +610,31 @@ Placed in the **game root directory** alongside `OutputBlaster.dll`.
 |-----|------|---------|-------------|
 | `Sleep` | int | 16 | Polling interval in milliseconds |
 | `MaxScaleOutput` | int | 16 | Maximum scale value for numeric outputs |
-| `OutputsSystem` | int (0/1) | 0 | 0 = WinOutputs (MAMEHooker Windows Messages), 1 = NetOutputs (TCP) |
+| `OutputsSystem` | int (0/1) | 0 | 0 = WinOutputs only (OutputHooker), 1 = Broadcast (both WinOutputs + NetOutputs TCP) |
 | `NetOutputsWithLF` | int (0/1) | 0 | Use `\r\n` instead of `\r` for frame ending |
-| `NetOutputsTCPPort` | int | 8000 | TCP server port (for NetOutputs mode) |
-| `NetOutputsUDPBroadcastPort` | int | 8001 | UDP broadcast announce port |
+| `NetOutputsTCPPort` | int | 37520 | TCP server port |
+| `NetOutputsUDPBroadcastPort` | int | 37521 | UDP broadcast announce port |
 | `AutoRecoilPulse` | int (0/1) | 0 | Auto-recoil pulse enable |
 | `PulseRate` | int | 300 | Pulse rate in milliseconds |
+| `AutoLaunchWinGame` | int (0/1) | 1 | Auto-launch win-game.exe when game starts |
 
-### Typical Values
+### Typical Sonic Dash Extreme INI
 
-| Game | Sleep | Notes |
-|------|-------|-------|
-| Sonic Dash Extreme | 200 | Slower polling, sufficient for ticket/lamp changes |
-| Most racing games | 16 | Default — fast polling for FFB and speedo |
-| Lightgun games | 16 | Fast for recoil/shoot outputs |
+```ini
+[Settings]
+Sleep=200
+MaxScaleOutput=100
+OutputsSystem=1
+NetOutputsWithLF=1
+NetOutputsTCPPort=37520
+NetOutputsUDPBroadcastPort=37521
+AutoLaunchWinGame=1
+```
+
+### Critical Notes
+- `OutputsSystem=1` now enables **both** WinOutputs (for OutputHooker) AND NetOutputs (for WinGame TCP) via `CBroadcastOutputs`
+- If `OutputsSystem=0` or INI is not found, only WinOutputs is used (OutputHooker works, WinGame does not receive data)
+- AutoLaunchWinGame search paths (relative to game EXE dir): `win-game.exe`, `..\win-game.exe`, `..\..\win-game.exe`, `..\win-game\src-tauri\target\release\win-game.exe`
 
 ---
 
@@ -857,7 +868,7 @@ OutputHooker is a Qt6-based C++ application that receives game output signals an
 | Type | Protocol | OutputBlaster Backend | OutputHooker Module | Port |
 |------|----------|----------------------|-------------------|------|
 | **WinMsg** | Windows Messages (MAMEHooker protocol) | `CWinOutputs` | `WinMsgModule` | N/A (Window message) |
-| **TCP** | Text-based socket | `CNetOutputs` | `TCPSocketModule` | 8000 |
+| **TCP** | Text-based socket | `CNetOutputs` | `TCPSocketModule` | 37520 |
 
 ### WinMsg (MAMEHooker) Connection Flow
 
@@ -875,7 +886,7 @@ OutputHooker is a Qt6-based C++ application that receives game output signals an
 ### TCP Connection Flow
 
 ```
-1. OutputHooker timer every 2000ms: connectToHost(LocalHost, 8000)
+1. OutputHooker timer every 2000ms: connectToHost(LocalHost, 37520)
 2. OutputBlaster TCP server accepts connection
 3. OutputBlaster sends: "mame_start = Game Name\r" + current output states
 4. Updates arrive as: "SignalName = Value\r"
@@ -891,9 +902,12 @@ SignalName = Value
 
 Where `SignalName` matches the name string from `Outputs.cpp` and `Value` is an integer 0-255.
 
-### Background: Both Systems Run Simultaneously
+### Both Output Systems Run Simultaneously
 
-OutputHooker runs both `WinMsgModule` and `TCPSocketModule` in parallel. When either one connects, it stops the other system and uses the connected one.
+Since Pass 0006, `CBroadcastOutputs` forwards every `SetValue()` call to both `CWinOutputs` (WinMsg) and `CNetOutputs` (TCP) simultaneously when `OutputsSystem=1`. This means:
+- **OutputHooker** receives data via WinMsg (no changes needed)
+- **WinGame** receives data via TCP on port 37520
+- **Both work at the same time** — no more choosing one or the other
 
 ### Hardware/Direct Output Mapping (INI Files)
 
@@ -915,7 +929,96 @@ INI commands include:
 
 ---
 
-## 11. Memory Access Helpers Reference
+## 11. WinGame Arcade Display
+
+### Overview
+
+WinGame (`win-game.exe`) is a Rust/Tauri 2.11.3 application that connects to OutputBlaster's TCP server (port 37520) and renders a live arcade cabinet display with:
+
+- **Billboard triangle** — color changes per active R/G/B channels
+- **Woofer speakers** — 3 speaker shapes (2 small, 1 large center) that glow when active
+- **Side LEDs** — Left/right columns with individual Red/Green/Blue dots
+- **Item LEDs** — Individual colored dots
+- **Lamps** — Start (green), Leader (amber), Red/Green/Blue
+- **Misc box** — Auto-detects active outputs not in the layout, shows correct colors
+- **Ticket counter** — Large animated display with falling ticket animation on round end
+- **High score leaderboard** — Top 10 scores with initials
+- **Coins exhausted indicator** — Flashes when coins hit 0
+- **Fireworks** — Particle burst on round end
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    win-game.exe                              │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │           Rust Backend (lib.rs)                   │       │
+│  │                                                    │       │
+│  │  TCP client ──── connect 127.0.0.1:37520 ──────►  │       │
+│  │                                                    │       │
+│  │  State (Mutex):                                    │       │
+│  │   ├─ outputs: HashMap<String, String>              │       │
+│  │   ├─ scores: Vec<ScoreEntry>                       │       │
+│  │   ├─ round_active, last_tickets, coins_inserted   │       │
+│  │   ├─ player_initials, high_score                   │       │
+│  │   ├─ connected, game_name                          │       │
+│  │   └─ logs: ring buffer (512 entries)               │       │
+│  │                                                    │       │
+│  │  Tauri Commands:                                   │       │
+│  │   ├─ get_status → {connected, game_name}          │       │
+│  │   ├─ get_outputs → OutputsSnapshot (values + raw)  │       │
+│  │   ├─ get_scores / submit_score                     │       │
+│  │   ├─ get_initials / set_initials                   │       │
+│  │   ├─ round_ended → Option<(score, tickets)>       │       │
+│  │   ├─ simulate (inject test data)                   │       │
+│  │   ├─ get_logs / close_app                          │       │
+│  │   └─ Custom protocol: wingame://localhost/index.html│       │
+│  └──────────────────────────────────────────────────┘       │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │          Frontend (Vite + vanilla JS)             │       │
+│  │                                                    │       │
+│  │  polls every 200ms: get_status + get_outputs       │       │
+│  │  renders: cabinet frame, LED positions, tickets   │       │
+│  │  Debug overlay: F12 toggle, log from get_logs     │       │
+│  │  Window: borderless, draggable, minimize/close    │       │
+│  │  build.rs embeds dist/index.html as byte array    │       │
+│  └──────────────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Build Process
+
+```batch
+cd win-game
+npm install                    # Install Vite + plugin-singlefile
+npm run build                  # Build frontend → dist/index.html
+cd src-tauri
+cargo build --release          # Build.rs auto-runs npm build + embeds
+:: Output: src-tauri/target/release/win-game.exe
+```
+
+### TCP Protocol (Match OutputBlaster NetOutputs)
+
+Lines received on port 37520:
+```
+mame_start = Sonic Dash Extreme
+LampStart = 1
+Billboard Red = 1
+TicketCounter = 42
+...
+```
+
+### Deployment
+
+- Copy `win-game.exe` to `<game_root>\` for DLL auto-launch (`AutoLaunchWinGame=1`)
+- DLL searches relative to game EXE: `win-game.exe`, `..\win-game.exe`, etc.
+- Can also be launched manually before the game
+
+---
+
+## 12. Memory Access Helpers Reference
 
 ### Reading Memory (from `Common Files/Game.cpp`)
 
@@ -967,7 +1070,7 @@ __try {
 
 ---
 
-## 12. CRC32 Game Detection Table
+## 13. CRC32 Game Detection Table
 
 ### CRC-Matched Games (TeknoParrot, PE header CRC)
 
@@ -1043,7 +1146,165 @@ __try {
 
 ---
 
-## 13. Appendices
+## 14. Complete System Integration Cheat Sheet
+
+### How Everything Connects
+
+```
+                    TEKNOPARROT
+                        │
+                        │ Launches game via LLHook/StartEx
+                        │ Writes EXE dir as CWD
+                        ▼
+              ┌─────────────────────┐
+              │   Game Process       │
+              │   (exe/Game.exe)     │
+              │                      │
+              │ Loads via:           │
+              │  DllMain()           │
+              │  → CreateThread()    │
+              │  → CRC32 detect     │
+              │  → Game::Outputs     │
+              │    GameLoop()        │
+              └────────┬────────────┘
+                       │
+                       │ CBroadcastOutputs
+                       ├────────────────────────────┐
+                       ▼                            ▼
+              ┌─────────────────┐    ┌──────────────────────────┐
+              │  CWinOutputs    │    │     CNetOutputs          │
+              │  (WinMsg)       │    │  TCP server :37520       │
+              │                 │    │  UDP broadcast :37521    │
+              │  Hidden window  │    └──────────┬───────────────┘
+              │  "MAMEOutput"   │               │
+              └────────┬────────┘               │
+                       │ POSTMSG                │ TCP connect
+                       ▼                        ▼
+              ┌─────────────────┐    ┌──────────────────────────┐
+              │ OutputHooker    │    │      WinGame              │
+              │ WinMsgModule    │    │  127.0.0.1:37520         │
+              │                 │    │                          │
+              │ Finds MAMEOutput│    │ Parses "Name = Value\r\n"│
+              │ Register client │    │ Renders arcade display  │
+              │ Routes to HW    │    │ Shows LEDs/scores/tix    │
+              └─────────────────┘    └──────────────────────────┘
+```
+
+### File Placement Map
+
+Every game needs these files in these EXACT locations:
+
+```
+<game_root>\                         (e.g., Sonic Dash Extreme (2015)[Sega Nu][TP]\)
+├── OutputBlaster.dll                [REQUIRED] The OB DLL (TeknoParrot loads this)
+├── OutputBlaster.ini                [REQUIRED] Config (OutputsSystem=1, TCP port, Sleep, etc.)
+├── win-game.exe                     [OPTIONAL] WinGame binary (AutoLaunchWinGame=1)
+│
+└── exe\
+    ├── SonicDash_R_Ring.exe         [GAME] The actual game EXE
+    ├── OutputBlaster.dll            [REQUIRED] Same DLL copy! (CWD may be exe\)
+    └── OutputBlaster.ini            [REQUIRED] Same INI copy! (CWD may be exe\)
+```
+
+**Rule of thumb:** ALWAYS copy `OutputBlaster.dll` AND `OutputBlaster.ini` to BOTH `<game_root>\` and `<game_root>\exe\`.
+
+### Configuration Values (Current Working Setup)
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `OutputsSystem` | `1` | Enables Broadcast mode (both OutputHooker + WinGame) |
+| `NetOutputsTCPPort` | `37520` | Unique TCP port, no conflicts |
+| `NetOutputsUDPBroadcastPort` | `37521` | Unique UDP port |
+| `NetOutputsWithLF` | `1` | Use `\r\n` frame ending (required by WinGame parser) |
+| `AutoLaunchWinGame` | `1` | DLL auto-launches win-game.exe on game start |
+| `Sleep` | `200` | Slower polling for Sonic Dash (adjust per game: 16 for racing/lightgun) |
+
+### Start Order
+
+1. **Launch OutputHooker** (optional — for hardware routing + visual debug)
+2. **Launch TeknoParrot** → select game → **Start**
+3. **TeknoParrot** injects OutputBlaster.dll into game process
+4. **OutputBlaster.dll** detects game by CRC, starts polling thread
+5. **NetOutputs** TCP server starts on port 37520
+6. **AutoLaunchWinGame**: DLL searches for and launches `win-game.exe`
+7. **WinGame** TCP client connects to 127.0.0.1:37520
+8. **OutputHooker** finds MAMEOutput window, registers as client
+9. **Both** receive live output data simultaneously
+
+### Ports Summary
+
+| Port | Protocol | Purpose | Used By |
+|------|----------|---------|---------|
+| 37520 | TCP | OutputBlaster output stream | WinGame TCP client |
+| 37521 | UDP | OutputBlaster broadcast announce | Network discovery |
+
+---
+
+## 15. New Game Addition Checklist
+
+### Phase 1: Get the CRC
+
+- [ ] Build OutputBlaster (Release|x86)
+- [ ] Copy `OutputBlaster.dll` to `<game_root>\` AND `<game_root>\exe\`
+- [ ] Copy `OutputBlaster.ini` to both directories (with `OutputsSystem=1`)
+- [ ] Ensure game XML profile has `Enable Outputs=1` (in TeknoParrotUI GameProfiles)
+- [ ] Launch game from TeknoParrot
+- [ ] Check DebugView for: `New CRC: XXXXXXXX not implemented`
+- [ ] Note the CRC hex value
+
+### Phase 2: Find Memory Offsets
+
+- [ ] Open Cheat Engine, attach to game process
+- [ ] Find binary lamps: scan for byte values that change with button presses/LED activity
+- [ ] Find numeric values: scan for 4-byte int (tickets, coins, score)
+- [ ] For pointer-based values: use pointer scan in Cheat Engine
+- [ ] Verify each offset is relative to module base (not absolute)
+
+### Phase 3: Create Game Handler
+
+- [ ] Create `Game Files/<GameName>.h` (class inheriting Game, OutputsGameLoop declaration)
+- [ ] Create `Game Files/<GameName>.cpp`:
+  - [ ] WindowsLoop() polling function
+  - [ ] ReadByte/ReadInt32 at known offsets
+  - [ ] Outputs->SetValue() mapping
+  - [ ] OutputsAreGo thread wrapper
+  - [ ] OutputsGameLoop() init with AutoLaunchWinGame()
+- [ ] Add `#include` and CRC `case` to `dllmain.cpp`
+
+### Phase 4: Update Outputs (if new signals needed)
+
+- [ ] Add new enum values before `NUM_OUTPUTS` in `Output Files/Outputs.h`
+- [ ] Add matching name strings in `Output Files/Outputs.cpp` (same position)
+- [ ] Increment `NUM_OUTPUTS` if adding after the last entry
+
+### Phase 5: Build and Deploy
+
+- [ ] Run `premake5.bat` (only if new .cpp/.h files added to Output Files/)
+- [ ] Build: `MSBuild OutputBlaster.sln /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v145`
+- [ ] Copy DLL to both game root directories
+- [ ] Copy/update INI in both directories
+
+### Phase 6: Update WinGame
+
+- [ ] If new outputs should appear in WinGame, add them to:
+  - [ ] `lib.rs`: `get_outputs()` command — add to OutputsSnapshot
+  - [ ] `main.js`: `updateDisplay()` — add updateLED() call
+  - [ ] `index.html`: add container element in the LED grid
+- [ ] Rebuild: `cd src-tauri && cargo build --release`
+- [ ] Deploy `win-game.exe` to `<game_root>\`
+
+### Phase 7: Verify
+
+- [ ] Launch game via TeknoParrot
+- [ ] Check DebugView for CRC match and polling messages
+- [ ] Verify OutputHooker receives all mapped outputs
+- [ ] Verify WinGame connects and shows live values
+- [ ] Test ticket/coin counters update correctly
+- [ ] Test round detection (ticket rising/falling)
+
+---
+
+## 16. Appendices
 
 ### A. Key File Paths
 
@@ -1056,6 +1317,7 @@ __try {
 | Output name strings | `E:\Projects\OutputBlaster\Output Files\Outputs.cpp` |
 | WinOutputs (MAMEHooker) | `E:\Projects\OutputBlaster\Output Files\WinOutputs.h/.cpp` |
 | NetOutputs (TCP/UDP) | `E:\Projects\OutputBlaster\Output Files\NetOutputs.h/.cpp` |
+| Broadcast outputs (dual backend) | `E:\Projects\OutputBlaster\Output Files\BroadcastOutputs.h/.cpp` |
 | Sonic Dash Extreme handler | `E:\Projects\OutputBlaster\Game Files\SonicDashExtreme.h/.cpp` |
 | Build config | `E:\Projects\OutputBlaster\premake5.lua` |
 | Governance rules | `E:\Projects\OutputBlaster\Agents.md` |
@@ -1063,8 +1325,13 @@ __try {
 | Master map | `E:\Projects\OutputBlaster\docs\MASTER_MAP.md` |
 | Game directory | `E:\Games-Roms\Tekno\Sonic Dash Extreme (2015)[Sega Nu][TP]\` |
 | Game executable | `E:\Games-Roms\...\exe\SonicDash_R_Ring.exe` |
-| OutputBlaster.ini | `E:\Games-Roms\...\OutputBlaster.ini` |
+| OutputBlaster.ini | `E:\Games-Roms\...\OutputBlaster.ini` AND `E:\Games-Roms\...\exe\OutputBlaster.ini` |
 | teknoparrot.ini | `E:\Games-Roms\...\exe\teknoparrot.ini` |
+| WinGame source | `E:\Projects\OutputBlaster\win-game\` |
+| WinGame backend | `E:\Projects\OutputBlaster\win-game\src-tauri\src\lib.rs` |
+| WinGame frontend | `E:\Projects\OutputBlaster\win-game\src\main.js` |
+| WinGame styles | `E:\Projects\OutputBlaster\win-game\src\styles.css` |
+| WinGame executable | `E:\Projects\OutputBlaster\win-game\src-tauri\target\release\win-game.exe` |
 | OutputHooker source root | `E:\Projects\OutputHooker\` |
 | OutputHooker executable | `E:\Projects\OutputHooker\build\Release\OutputHooker.exe` |
 
@@ -1080,6 +1347,17 @@ msbuild OutputBlaster.sln /p:Configuration=Release /p:Platform=x86
 
 :: Deploy
 copy bin\x86\Release\OutputBlaster.dll "<game_root>\"
+copy bin\x86\Release\OutputBlaster.dll "<game_root>\exe\"
+
+:: Build WinGame (Tauri app)
+cd win-game
+npm install
+cd src-tauri
+cargo build --release
+:: Output: src-tauri\target\release\win-game.exe
+
+:: Deploy WinGame
+copy src-tauri\target\release\win-game.exe "<game_root>\"
 ```
 
 ### C. OutputHooker Build Commands
@@ -1097,7 +1375,10 @@ cmake --build build --config Release
 | **DebugView** (`dbgview.exe`) | Capture `OutputDebugStringA` output | Run while game is loaded |
 | **Cheat Engine** | Find memory offsets | Attach to game process, scan for value changes |
 | **Process Explorer** | Verify DLL is loaded | Check game process → DLL list for OutputBlaster.dll |
-| **OutputHooker** | Visual output display | Launch before game; shows live signal values |
+| **OutputHooker** | Visual output display (WinMsg) | Launch before game; shows live signal values |
+| **WinGame** | Arcade cabinet display (TCP/37520) | Auto-launched by DLL or run manually; F12 for debug log |
+| **WinGame Simulator** | Test without game | `python win-game/simulate.py` (TCP server on 37520) |
+| **netstat** | Verify TCP server | `netstat -ano | findstr 37520` should show LISTENING |
 | **Python RE scripts** | Memory scanning | In game directory: `auto_tickets.py`, `monitor_tickets.py`, etc. |
 
 ### E. Standard Output Pattern Reference

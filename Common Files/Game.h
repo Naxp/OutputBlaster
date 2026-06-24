@@ -67,3 +67,5 @@ public:
 
 	virtual void OutputsGameLoop();
 };
+
+void AutoLaunchWinGame();

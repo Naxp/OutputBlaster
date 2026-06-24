@@ -13,9 +13,12 @@ struct AppState {
     scores: Mutex<Vec<ScoreEntry>>,
     round_active: Mutex<bool>,
     last_tickets: Mutex<i32>,
+    last_coin1: Mutex<i32>,
+    coins_inserted: Mutex<bool>,
     high_score: Mutex<i32>,
     connected: Mutex<bool>,
     game_name: Mutex<String>,
+    player_initials: Mutex<String>,
     logs: Mutex<Vec<String>>,
     tx: broadcast::Sender<String>,
 }
@@ -55,6 +58,7 @@ struct OutputsSnapshot {
     high_score: i32,
     rings: i32,
     lamps: HashMap<String, bool>,
+    raw: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -125,6 +129,7 @@ fn get_outputs(state: State<AppState>) -> OutputsSnapshot {
         high_score,
         rings,
         lamps,
+        raw: outputs.clone(),
     }
 }
 
@@ -179,6 +184,19 @@ fn save_scores(scores: &[ScoreEntry]) {
     if let Ok(data) = serde_json::to_string(scores) {
         let _ = std::fs::write("scores.json", data);
     }
+}
+
+#[tauri::command]
+fn get_initials(state: State<AppState>) -> String {
+    state.player_initials.lock().unwrap().clone()
+}
+
+#[tauri::command]
+fn set_initials(state: State<AppState>, initials: String) {
+    let mut pi = state.player_initials.lock().unwrap();
+    let trimmed: String = initials.chars().take(3).collect();
+    *pi = if trimmed.len() < 3 { format!("{: <3}", trimmed) } else { trimmed };
+    log_info(&state, &format!("Player initials set to: {}", *pi));
 }
 
 #[tauri::command]
@@ -253,11 +271,11 @@ fn round_ended(state: State<AppState>) -> Option<(i32, i32)> {
 
 async fn tcp_client_loop(state: tauri::AppHandle) {
     loop {
-        match TcpStream::connect("127.0.0.1:8000").await {
+        match TcpStream::connect("127.0.0.1:37520").await {
             Ok(stream) => {
                 let st: State<AppState> = state.state();
                 *st.connected.lock().unwrap() = true;
-                log_info(&st, "TCP connected to OutputBlaster on port 8000");
+                log_info(&st, "TCP connected to OutputBlaster on port 37520");
                 drop(st);
                 let reader = BufReader::new(stream);
                 let mut lines = reader.lines();
@@ -281,9 +299,11 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
                             let val: i32 = value.parse().unwrap_or(0);
                             let mut last = st.last_tickets.lock().unwrap();
                             let mut round = st.round_active.lock().unwrap();
-                            if val > 0 && *last == 0 {
+                            let coins = *st.coins_inserted.lock().unwrap();
+                            if val > 0 && *last == 0 && coins {
                                 *round = true;
-                                log_info(&st, "Round started (TicketCounter 0 -> positive)");
+                                *st.coins_inserted.lock().unwrap() = false;
+                                log_info(&st, "Round started (coins inserted)");
                             } else if val == 0 && *last > 0 && *round {
                                 *round = false;
                                 log_info(&st, &format!("Round ended! Tickets: {}", *last));
@@ -295,6 +315,15 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
                             let val: i32 = value.parse().unwrap_or(0);
                             let mut hs = st.high_score.lock().unwrap();
                             *hs = val;
+                        }
+                        if signal == "Coin1" {
+                            let val: i32 = value.parse().unwrap_or(0);
+                            let mut last = st.last_coin1.lock().unwrap();
+                            if val > *last {
+                                *st.coins_inserted.lock().unwrap() = true;
+                                log_info(&st, &format!("Coin inserted ({} -> {})", *last, val));
+                            }
+                            *last = val;
                         }
                     }
                 }
@@ -314,39 +343,34 @@ async fn tcp_client_loop(state: tauri::AppHandle) {
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
-fn write_html() -> Option<String> {
-    let path = std::env::current_exe().ok()?
-        .parent()?
-        .join("wingame.html");
-    match std::fs::write(&path, HTML) {
-        Ok(_) => {
-            println!("[WinGame] HTML written to: {}", path.display());
-            Some(path.to_string_lossy().to_string())
-        }
-        Err(e) => {
-            eprintln!("[WinGame] ERROR: Failed to write HTML: {}", e);
-            None
-        }
-    }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let scores = load_scores();
     let (tx, _rx) = broadcast::channel::<String>(100);
+    let html_bytes: Vec<u8> = HTML_BYTES.to_vec();
 
     println!("[WinGame] Starting Arcade Output Display v0.1.0");
 
     tauri::Builder::default()
+        .register_uri_scheme_protocol("wingame", move |_app, _req| {
+            tauri::http::Response::builder()
+                .status(200)
+                .header("Content-Type", "text/html")
+                .body(html_bytes.clone())
+                .unwrap()
+        })
         .plugin(tauri_plugin_shell::init())
         .manage(AppState {
             outputs: Mutex::new(HashMap::new()),
             scores: Mutex::new(scores),
             round_active: Mutex::new(false),
             last_tickets: Mutex::new(0),
+            last_coin1: Mutex::new(0),
+            coins_inserted: Mutex::new(false),
             high_score: Mutex::new(0),
             connected: Mutex::new(false),
             game_name: Mutex::new(String::new()),
+            player_initials: Mutex::new("---".to_string()),
             logs: Mutex::new(Vec::new()),
             tx: tx.clone(),
         })
@@ -359,15 +383,10 @@ pub fn run() {
             round_ended,
             close_app,
             simulate,
+            get_initials,
+            set_initials,
         ])
         .setup(|app| {
-            if let Some(path) = write_html() {
-                if let Some(window) = app.get_webview_window("main") {
-                    let url = format!("file:///{}", path.replace('\\', "/"));
-                    println!("[WinGame] Setting window URL to: {}", url);
-                    let _ = window.navigate(tauri::Url::parse(&url).unwrap());
-                }
-            }
             let handle = app.handle().clone();
             println!("[WinGame] Setup complete — spawning TCP client loop");
             tauri::async_runtime::spawn(async move {

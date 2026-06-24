@@ -14,7 +14,8 @@ You should have received a copy of the GNU General Public License
 along with Output Blaster.If not, see < https://www.gnu.org/licenses/>.*/
 
 #include "Game.h"
-#include <Windows.h>
+#include "../Output Files/BroadcastOutputs.h"
+#include <windows.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -25,8 +26,8 @@ Helpers * helpers = new Helpers();
 
 int configOutputsSystem = GetPrivateProfileInt(TEXT("Settings"), TEXT("OutputsSystem"), 0, settingsFilename);
 int configNetOutputsWithLF = GetPrivateProfileInt(TEXT("Settings"), TEXT("NetOutputsWithLF"), 0, settingsFilename);
-int configNetOutputsTCPPort = GetPrivateProfileInt(TEXT("Settings"), TEXT("NetOutputsTCPPort"), 8000, settingsFilename);
-int configNetOutputsUDPBroadcastPort = GetPrivateProfileInt(TEXT("Settings"), TEXT("NetOutputsUDPBroadcastPort"), 8001, settingsFilename);
+int configNetOutputsTCPPort = GetPrivateProfileInt(TEXT("Settings"), TEXT("NetOutputsTCPPort"), 37520, settingsFilename);
+int configNetOutputsUDPBroadcastPort = GetPrivateProfileInt(TEXT("Settings"), TEXT("NetOutputsUDPBroadcastPort"), 37521, settingsFilename);
 
 bool Helpers::fileExists(char *filename)
 {
@@ -137,20 +138,81 @@ void Game::OutputsGameLoop()
 
 COutputs* Game::CreateOutputsFromConfig()
 {
-	switch (configOutputsSystem) {
-		case 1: {
-			auto outputs = new CNetOutputs();
-			// TCP and UDP port from .ini
-			outputs->TcpPort = configNetOutputsTCPPort;
-			outputs->UdpBroadcastPort = configNetOutputsUDPBroadcastPort;
-			if (configNetOutputsWithLF==1) {
-				outputs->FrameEnding = std::string("\r\n");
-			}
-			return (COutputs*)outputs;
-		} break;
-		case 0:
-		default:
-			return new CWinOutputs();
-			break;
-	}
+    // Always create WinOutputs (for OutputHooker compat)
+    auto winOut = new CWinOutputs();
+
+    switch (configOutputsSystem) {
+        case 1: {
+            auto netOut = new CNetOutputs();
+            netOut->TcpPort = configNetOutputsTCPPort;
+            netOut->UdpBroadcastPort = configNetOutputsUDPBroadcastPort;
+            if (configNetOutputsWithLF==1) {
+                netOut->FrameEnding = std::string("\r\n");
+            }
+            return new CBroadcastOutputs(winOut, netOut);
+        } break;
+        case 0:
+        default:
+            return winOut;
+            break;
+    }
+}
+
+void AutoLaunchWinGame()
+{
+    int autoLaunch = GetPrivateProfileIntA("Settings", "AutoLaunchWinGame", 1, ".\\OutputBlaster.ini");
+    if (!autoLaunch)
+    {
+        OutputDebugStringA("OB: AutoLaunchWinGame=0 in INI, skipping");
+        return;
+    }
+
+    if (FindWindowA(NULL, "Arcade Output Display"))
+    {
+        OutputDebugStringA("OB: WinGame window found, already running");
+        return;
+    }
+
+    char exeDir[MAX_PATH];
+    GetModuleFileNameA(NULL, exeDir, MAX_PATH);
+    char* slash = strrchr(exeDir, '\\');
+    if (slash) *slash = 0;
+
+    const char* candidates[] = {
+        "win-game.exe",
+        "..\\win-game.exe",
+        "..\\..\\win-game.exe",
+        "..\\win-game\\src-tauri\\target\\release\\win-game.exe",
+        "..\\..\\win-game\\src-tauri\\target\\release\\win-game.exe",
+    };
+
+    for (const char* rel : candidates)
+    {
+        char full[MAX_PATH];
+        sprintf_s(full, "%s\\%s", exeDir, rel);
+        char absPath[MAX_PATH];
+        GetFullPathNameA(full, MAX_PATH, absPath, NULL);
+        if (GetFileAttributesA(absPath) != INVALID_FILE_ATTRIBUTES)
+        {
+            STARTUPINFOA si = { sizeof(si) };
+            PROCESS_INFORMATION pi;
+            if (CreateProcessA(absPath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+            {
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
+                char buf[256];
+                sprintf_s(buf, "OB: Launched win-game.exe from %s", absPath);
+                OutputDebugStringA(buf);
+            }
+            else
+            {
+                char buf[256];
+                sprintf_s(buf, "OB: CreateProcess failed for %s error=%u", absPath, GetLastError());
+                OutputDebugStringA(buf);
+            }
+            return;
+        }
+    }
+
+    OutputDebugStringA("OB: win-game.exe not found in any candidate path");
 }

@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arcade Output Display</title>
-  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <div class="cabinet">
@@ -26,47 +25,82 @@
                 <span>#</span><span>INITIALS</span><span>SCORE</span><span>TICKETS</span>
               </div>
             </div>
+            <button id="changeInitialsBtn" class="change-initials-btn">CHANGE INITIALS</button>
           </div>
           <div class="right-panel" id="arcadeView">
             <div class="game-info">
-              <div id="coinDisplay" class="info-box">
+              <div class="info-box">
                 <span class="info-label">COINS</span>
                 <span class="info-val" id="coinVal">0</span>
               </div>
-              <div id="jackpotDisplay" class="info-box">
+              <div class="info-box">
                 <span class="info-label">JACKPOT</span>
                 <span class="info-val" id="jackpotVal">0</span>
               </div>
-              <div id="hsDisplay" class="info-box">
+              <div class="info-box">
                 <span class="info-label">HIGH SCORE</span>
                 <span class="info-val" id="hsVal">0</span>
               </div>
-              <div id="ringsDisplay" class="info-box">
+              <div class="info-box">
                 <span class="info-label">RINGS</span>
                 <span class="info-val" id="ringsVal">0</span>
               </div>
             </div>
-            <div class="arcade-art">
-              <div class="lamp-row">
-                <div class="lamp start-lamp" id="lampStart"></div>
-                <div class="lamp leader-lamp" id="lampLeader"></div>
+            <div class="led-grid">
+              <!-- Billboard + Marquee -->
+              <div class="led-zone zone-billboard">
+                <div class="zone-label">BILLBOARD</div>
+                <div class="billboard-triangle" id="billboardShape"></div>
+                <div class="billboard-leds" id="billboardOut"></div>
+                <div class="marquee-bar" id="marqueeBar">MARQUEE</div>
               </div>
-              <div class="led-bar billboard-led" id="billboardLed">
-                <span>BILLBOARD</span>
+
+              <!-- Lamps -->
+              <div class="led-zone zone-lamps">
+                <div class="zone-label">LAMPS</div>
+                <div class="lamps-container" id="lampsOut"></div>
               </div>
-              <div class="led-bar marquee-led" id="marqueeLed">
-                <span>MARQUEE</span>
+
+              <!-- Woofers (speakers) -->
+              <div class="led-zone zone-woofers">
+                <div class="zone-label">WOOFERS</div>
+                <div class="woofer-group">
+                  <div class="woofer woofer-small"></div>
+                  <div class="woofer woofer-large">
+                    <div class="woofer-leds" id="wooferOut"></div>
+                  </div>
+                  <div class="woofer woofer-small"></div>
+                </div>
               </div>
-              <div class="side-leds" id="sideLeds">
-                <div class="led-strip left-strip"></div>
-                <div class="led-strip right-strip"></div>
+
+              <!-- Side LEDs -->
+              <div class="led-zone zone-sides">
+                <div class="zone-label">SIDE LEDS</div>
+                <div class="side-group">
+                  <div class="side-column">
+                    <span class="side-label">LEFT</span>
+                    <div class="side-leds" id="sideLeftOut"></div>
+                  </div>
+                  <div class="side-column">
+                    <span class="side-label">RIGHT</span>
+                    <div class="side-leds" id="sideRightOut"></div>
+                  </div>
+                </div>
               </div>
-              <div class="led-bar woofer-led" id="wooferLed">
-                <span>WOOFER</span>
+
+              <!-- Item LEDs -->
+              <div class="led-zone zone-items">
+                <div class="zone-label">ITEM LEDS</div>
+                <div class="items-container" id="itemOut"></div>
               </div>
-              <div class="item-led" id="itemLed">
-                <span>ITEM</span>
+
+              <!-- Misc -->
+              <div class="led-zone zone-misc">
+                <div class="zone-label">MISC</div>
+                <div class="misc-container" id="miscOut"><span class="misc-empty">—</span></div>
               </div>
+
+              <!-- Ticket counter -->
               <div class="ticket-slot" id="ticketSlot">
                 <div class="ticket-count">
                   <span class="ticket-label">TICKETS</span>
@@ -75,6 +109,7 @@
                 <div class="ticket-out" id="ticketOut"></div>
               </div>
             </div>
+            <div id="coinsExhausted" class="coins-exhausted" style="display:none">COINS EMPTY — INSERT TOKENS</div>
             <div class="connection-status" id="connStatus">Disconnected</div>
             <button id="simulateBtn" class="sim-btn" title="Inject simulated game data for testing">Sim Data</button>
           </div>
@@ -82,11 +117,11 @@
       </div>
     </div>
     <div class="coin-panel">
-      <div class="coin-button coin-left" id="coinBtn">COIN</div>
-      <div class="start-button" id="startBtn">START</div>
+      <div class="coin-button coin-left">COIN</div>
+      <div class="start-button">START</div>
       <div class="coin-button coin-right">COIN</div>
     </div>
-    <div class="status-bar" id="statusBar">Waiting for game (port 8000)...</div>
+    <div class="status-bar" id="statusBar">Waiting for game (port 37520)...</div>
   </div>
 
   <div class="modal-overlay" id="initialsModal" style="display:none">

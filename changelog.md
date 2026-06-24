@@ -81,3 +81,23 @@
   - `win-game/src/main.js` (added rings display update)
   - `bin/x86/Release/OutputBlaster.dll` (rebuilt + deployed)
 - **Reason for change:** User identified ring count pointer chain in Cheat Engine; need real-time ring display in WinGame; OB DLL needed rebuild for new output
+
+### 2026-06-24 — Pass 0006: Broadcast Outputs, WinGame UI Redesign & Port Change
+
+- **Task reference:** 0006
+- **Summary:** Created `CBroadcastOutputs` wrapper allowing both WinOutputs (OutputHooker) and NetOutputs (WinGame TCP) to run simultaneously. Changed default ports from 8000/8001 to 37520/37521 to avoid conflicts. Redesigned WinGame LED layout: Billboard triangle with per-color R/G/B, Woofer speaker shapes (2 small + 1 large), Side LEDs left/right columns, Item LEDs, Misc auto-detect box for unknown outputs. Fixed WinGame build.rs to always rebuild frontend (was caching stale HTML). Added persistent player initials with get/set Tauri commands and "Change Initials" button. Added raw outputs HashMap to OutputsSnapshot for Misc box detection.
+- **Files changed:**
+  - `Output Files/BroadcastOutputs.h` (new)
+  - `Output Files/BroadcastOutputs.cpp` (new)
+  - `Common Files/Game.cpp` (modified: includes broadcast, dual-backend CreateOutputsFromConfig)
+  - `win-game/index.html` (rewritten: new LED layout, Change Initials button, coins-exhausted indicator)
+  - `win-game/src/main.js` (rewritten: per-color LED rendering, triangle coloring, woofer glow, Misc box, round-end flow)
+  - `win-game/src/styles.css` (rewritten: new grid layout, billboard triangle CSS, woofer circles, color-led dots, misc box)
+  - `win-game/src-tauri/src/lib.rs` (modified: raw HashMap in OutputsSnapshot, get_initials/set_initials, player_initials state)
+  - `win-game/src-tauri/build.rs` (modified: always build frontend, rerun-if-changed for source files)
+  - `win-game/simulate.py` (port changed to 37520)
+  - `docs/MASTER_MAP.md` (updated: new cheat sheet, broadcast architecture, port guide, complete system diagram)
+  - `changelog.md`, `Repo_map.md`, `Audits_index.md`, `tasks/TASK_INDEX.md` (updated)
+  - `audits/2026-06-24-0006-broadcast-outputs-wingame-ui-redesign.md` (new)
+  - `tasks/0006-broadcast-outputs-wingame-ui-redesign.md` (new)
+- **Reason for change:** Enable OutputHooker + WinGame simultaneously. Fix port conflicts. Improve LED visualization to match physical hardware layout. Fix stale frontend builds in WinGame.
