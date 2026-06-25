@@ -346,6 +346,12 @@ DWORD WINAPI OutputsLoop(LPVOID lpParam)
 		memset(test, 0, 256);
 		sprintf(test, "OB: No game match — CRC: %08x — add to dllmain.cpp", newCrcResult);
 		OutputDebugStringA(test);
+
+		FILE* f = fopen("C:\\Users\\robon\\AppData\\Local\\Temp\\ob_crc_capture.txt", "w");
+		if (f) {
+			fprintf(f, "%08x", newCrcResult);
+			fclose(f);
+		}
 	}
 	return 0;
 }
