@@ -252,7 +252,10 @@ DWORD WINAPI OutputsLoop(LPVOID lpParam)
 	case 0x8070240b:  // Frogger (sdaemon.exe)
 		game = new Frogger;
 		break;
-	case 0xf4b75de2:  // TODO: confirm Ghostbusters CRC
+	case 0xf4b75de2:  // TODO: confirm Ghostbusters CRC (maybe ELF binary?)
+		game = new Ghostbusters;
+		break;
+	case 0xa7704afa:  // BudgieLoader.exe (ElfLdr2) running Ghostbusters
 		game = new Ghostbusters;
 		break;
 

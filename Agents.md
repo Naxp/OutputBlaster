@@ -231,8 +231,8 @@ premake5.bat            # Generates VS2017 project files
 - XML profiles live at the TeknoParrotUI project directory.
 - `Enable Outputs=1` must be set in the XML profile for OutputBlaster to load.
 - `teknoparrot.ini` is written by TeknoParrotUI from the XML profile.
-- OutputBlaster.dll must be placed in the game root directory.
-- OutputBlaster.ini in the game root configures polling rate and output system.
+- OutputBlaster.dll must go in the game's installation folder, alongside the game's executable (.exe/ELF) file — NOT in the loader directory (ElfLdr2/).
+- OutputBlaster.ini must be copied to the same directory as OutputBlaster.dll (not just the game root; CWD varies per game).
 
 ### 9.7 Code Style & License
 

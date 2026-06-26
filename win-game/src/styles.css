@@ -219,6 +219,26 @@ body {
   text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
 }
 
+.audit-info {
+  border-top: 1px solid #e94560;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.audit-box {
+  border-color: #e94560;
+  background: rgba(40, 10, 20, 0.6);
+}
+
+.audit-label {
+  color: #e94560;
+}
+
+.audit-val {
+  color: #ffaa00;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+}
+
 /* LED Grid Layout */
 .led-grid {
   flex: 1;

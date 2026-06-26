@@ -11,6 +11,10 @@ let ctx = canvas.getContext('2d');
 let particles = [];
 let animFrame = null;
 let roundEndPending = false;
+let auditWs = null;
+let auditData = {};
+let gamePhase = 'unknown';
+let sessionData = null;
 
 // Per-game stat config: label → output key mapping
 const STAT_CONFIGS = {
@@ -25,14 +29,128 @@ const STAT_CONFIGS = {
     { label: 'COINS P2', key: 'coin2' },
     { label: 'TICKETS', key: 'ticket_counter' },
     { label: 'TOP SCORE', key: 'high_score' },
+    { label: 'TIX OWED', key: 'ticket_jackpot' },
+    { label: 'COINS L BK', key: 'base' },
+    { label: 'COINS R BK', key: 'extra' },
+    { label: 'BUGS P1', key: 'ammo1pa' },
+    { label: 'FLIES P1', key: 'ammo1pb' },
+    { label: 'BUGS P2', key: 'ammo2pa' },
+    { label: 'FLIES P2', key: 'ammo2pb' },
+    { label: 'BUGS SUM', key: 'rings' },
   ],
   'Ghostbusters': [
-    { label: 'COINS P1', key: 'coin1' },
-    { label: 'GHOSTS P1', key: 'high_score' },
-    { label: 'COINS P2', key: 'coin2' },
-    { label: 'GHOSTS P2', key: 'rings' },
+    { label: 'SCORE P1', key: 'high_score' },
+    { label: 'TICKETS P1', key: 'ticket_counter' },
+    { label: 'GHOSTS P1', key: 'ammo1pa' },
+    { label: 'BOSSES P1', key: 'ammo1pb' },
+    { label: 'SCORE P2', key: 'ticket_jackpot' },
+    { label: 'TICKETS P2', key: 'rings' },
+    { label: 'GHOSTS P2', key: 'ammo2pa' },
+    { label: 'BOSSES P2', key: 'ammo2pb' },
+    { label: 'COINS', key: 'coin1' },
+    { label: 'CASH', key: 'coin2' },
   ],
 };
+
+// Per-game audit stat config (from RTDT file watcher or Frogger binary audit)
+const AUDIT_CONFIGS = {
+  'Ghostbusters': [
+    { label: 'TICKETS P1', source: 'tickets', field: 'ticketsAwardedPlayer1' },
+    { label: 'TICKETS P2', source: 'tickets', field: 'ticketsAwardedPlayer2' },
+    { label: 'TOTAL SCORE', source: 'gameplay', field: 'Score' },
+    { label: 'GHOSTS', source: 'gameplay', field: 'GhostsKilled' },
+    { label: 'BOSSES', source: 'gameplay', field: 'BossesKilled' },
+    { label: 'WINS', source: 'gameplay', field: 'Wins' },
+    { label: 'SESSION RD', source: 'session', field: 'current_round' },
+  ],
+  'Frogger': [
+    { label: 'GAMES P1', source: 'frogger', field: 'games_played_left' },
+    { label: 'GAMES P2', source: 'frogger', field: 'games_played_right' },
+    { label: 'TICKETS P1', source: 'frogger', field: 'tickets_left' },
+    { label: 'TICKETS P2', source: 'frogger', field: 'tickets_right' },
+    { label: 'BUGS P1', source: 'frogger', field: 'bugs_left' },
+    { label: 'BUGS P2', source: 'frogger', field: 'bugs_right' },
+    { label: 'FLIES P1', source: 'frogger', field: 'butterflies_left' },
+    { label: 'FLIES P2', source: 'frogger', field: 'butterflies_right' },
+    { label: 'COIN DROPS L', source: 'frogger', field: 'coin_drops_left' },
+    { label: 'COIN DROPS R', source: 'frogger', field: 'coin_drops_right' },
+    { label: 'CREDITS L', source: 'frogger', field: 'current_credits_left' },
+    { label: 'CREDITS R', source: 'frogger', field: 'current_credits_right' },
+    { label: 'COINS L', source: 'frogger', field: 'current_coins_left' },
+    { label: 'COINS R', source: 'frogger', field: 'current_coins_right' },
+    { label: 'SERV CREDITS', source: 'frogger', field: 'service_credits' },
+  ],
+};
+
+// ---- WebSocket pipeline connection ----
+
+function connectAuditWs() {
+  if (auditWs && (auditWs.readyState === WebSocket.OPEN || auditWs.readyState === WebSocket.CONNECTING)) return;
+  try {
+    auditWs = new WebSocket('ws://localhost:8181/api/pipeline/ws');
+    auditWs.onmessage = (msg) => {
+      try {
+        const evt = JSON.parse(msg.data);
+        if (evt.event === 'data_updated') {
+          Object.assign(auditData, evt.data);
+        } else if (evt.event === 'game_started' || evt.event === 'round_started') {
+          gamePhase = 'playing';
+        } else if (evt.event === 'round_ended') {
+          gamePhase = 'round_end';
+        } else if (evt.event === 'game_over') {
+          gamePhase = 'game_over';
+          if (evt.data) sessionData = evt.data;
+        }
+        if (evt.data && evt.data.session) {
+          sessionData = evt.data.session;
+        }
+      } catch (_) {}
+    };
+    auditWs.onclose = () => { auditWs = null; setTimeout(connectAuditWs, 3000); };
+    auditWs.onerror = () => { auditWs = null; setTimeout(connectAuditWs, 3000); };
+  } catch (_) {
+    setTimeout(connectAuditWs, 3000);
+  }
+}
+
+function getAuditValue(source, field) {
+  if (source === 'tickets') {
+    const t = auditData.tickets_awarded_p1 !== undefined ? auditData : {};
+    if (field === 'ticketsAwardedPlayer1') return t.tickets_awarded_p1;
+    if (field === 'ticketsAwardedPlayer2') return t.tickets_awarded_p2;
+  }
+  if (source === 'gameplay') {
+    if (field === 'Score') return auditData.score;
+    if (field === 'GhostsKilled') return auditData.ghosts_killed;
+    if (field === 'BossesKilled') return auditData.bosses_killed;
+    if (field === 'Wins') return auditData.wins;
+  }
+  if (source === 'session' && sessionData) {
+    if (field === 'current_round') return sessionData.current_round;
+    if (field === 'total_score') return sessionData.total_score;
+  }
+  if (source === 'frogger') {
+    return auditData[field] !== undefined ? auditData[field] : null;
+  }
+  return null;
+}
+
+function renderAuditData(gameName) {
+  const container = document.getElementById('auditStats');
+  if (!container) return;
+  const config = AUDIT_CONFIGS[gameName];
+  if (!config) { container.innerHTML = ''; return; }
+  container.innerHTML = '';
+  config.forEach(stat => {
+    const val = getAuditValue(stat.source, stat.field);
+    if (val === null) return;
+    const box = document.createElement('div');
+    box.className = 'info-box audit-box';
+    box.innerHTML = `<span class="info-label audit-label">${stat.label}</span><span class="info-val audit-val">${typeof val === 'number' ? val.toLocaleString() : val}</span>`;
+    container.appendChild(box);
+  });
+  if (!container.children.length) container.innerHTML = '';
+}
 
 function getDefaultStatConfig() {
   return [
@@ -244,7 +362,21 @@ async function updateDisplay() {
   }
 
   const o = await invoke('get_outputs');
-  document.getElementById('ticketVal').textContent = o.ticket_counter;
+  // Merge with pipeline's combined OB outputs (relayed DLL + injected audit)
+  let combined = { ...o };
+  try {
+    const resp = await fetch('http://localhost:8181/api/pipeline/ob-outputs');
+    if (resp.ok) {
+      const pdata = await resp.json();
+      if (pdata.status === 'running' && pdata.outputs) {
+        for (const [k, v] of Object.entries(pdata.outputs)) {
+          const lk = k.toLowerCase();
+          if (v !== '0') combined[lk] = v;
+        }
+      }
+    }
+  } catch (_) {}
+  document.getElementById('ticketVal').textContent = combined.ticket_counter;
 
   // Dynamic per-game stat boxes
   const config = STAT_CONFIGS[gameName] || getDefaultStatConfig();
@@ -260,8 +392,11 @@ async function updateDisplay() {
   }
   config.forEach(stat => {
     const el = document.getElementById(`stat_${stat.key}`);
-    if (el) el.textContent = o[stat.key] !== undefined ? o[stat.key] : '0';
+    if (el) el.textContent = combined[stat.key] !== undefined ? combined[stat.key] : '0';
   });
+
+  // Audit data boxes (from RTDT file watcher pipeline)
+  renderAuditData(gameName);
 
   // Coin button lighting
   document.querySelectorAll('.coin-button').forEach(btn => {
@@ -433,6 +568,7 @@ document.getElementById('initialsModal').addEventListener('click', (e) => {
 });
 
 // Start
+connectAuditWs();
 pollInterval = setInterval(updateDisplay, 200);
 debugInterval = setInterval(updateDebugLog, 500);
 updateDisplay();

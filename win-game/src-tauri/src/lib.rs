@@ -57,6 +57,12 @@ struct OutputsSnapshot {
     coin2: i32,
     high_score: i32,
     rings: i32,
+    ammo1pa: i32,
+    ammo1pb: i32,
+    ammo2pa: i32,
+    ammo2pb: i32,
+    base: i32,
+    extra: i32,
     lamps: HashMap<String, bool>,
     raw: HashMap<String, String>,
 }
@@ -94,6 +100,30 @@ fn get_outputs(state: State<AppState>) -> OutputsSnapshot {
         .get("Rings")
         .and_then(|v| v.parse().ok())
         .unwrap_or(0);
+    let ammo1pa = outputs
+        .get("Ammo1pA")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let ammo1pb = outputs
+        .get("Ammo1pB")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let ammo2pa = outputs
+        .get("Ammo2pA")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let ammo2pb = outputs
+        .get("Ammo2pB")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let base = outputs
+        .get("Base")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let extra = outputs
+        .get("Extra")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
 
     let mut lamps = HashMap::new();
     for lamp in [
@@ -128,6 +158,12 @@ fn get_outputs(state: State<AppState>) -> OutputsSnapshot {
         coin2,
         high_score,
         rings,
+        ammo1pa,
+        ammo1pb,
+        ammo2pa,
+        ammo2pb,
+        base,
+        extra,
         lamps,
         raw: outputs.clone(),
     }
@@ -215,6 +251,12 @@ fn simulate(state: State<AppState>) -> ConnectionStatus {
     outputs.insert("Coin1".into(), ((t % 50) + 1).to_string());
     outputs.insert("HighScore".into(), ((t % 999999) + 100000).to_string());
     outputs.insert("Rings".into(), ((t % 300) + 5).to_string());
+    outputs.insert("Ammo1pA".into(), ((t % 100) + 1).to_string());
+    outputs.insert("Ammo1pB".into(), ((t % 80) + 1).to_string());
+    outputs.insert("Ammo2pA".into(), ((t % 60) + 1).to_string());
+    outputs.insert("Ammo2pB".into(), ((t % 40) + 1).to_string());
+    outputs.insert("Base".into(), ((t % 30) + 1).to_string());
+    outputs.insert("Extra".into(), ((t % 20) + 1).to_string());
     outputs.insert("LampStart".into(), if t % 3 == 0 { "1".into() } else { "0".into() });
     outputs.insert("LampLeader".into(), if t % 5 == 0 { "1".into() } else { "0".into() });
     outputs.insert("LampRed".into(), "1".into());
