@@ -1,0 +1,79 @@
+{
+  "Sonic Dash Extreme": {
+    "gameId": "sonic_dash_extreme",
+    "stats": [
+      { "label": "COINS", "key": "coin1" },
+      { "label": "JACKPOT", "key": "ticket_jackpot" },
+      { "label": "HIGH SCORE", "key": "high_score" },
+      { "label": "RINGS", "key": "rings" }
+    ],
+    "auditStats": []
+  },
+  "Frogger": {
+    "gameId": "frogger",
+    "stats": [
+      { "label": "COINS P1", "key": "coin1" },
+      { "label": "COINS P2", "key": "coin2" },
+      { "label": "TICKETS", "key": "ticket_counter" },
+      { "label": "TOP SCORE", "key": "high_score" },
+      { "label": "TIX OWED", "key": "ticket_jackpot" },
+      { "label": "COINS L BK", "key": "base" },
+      { "label": "COINS R BK", "key": "extra" },
+      { "label": "BUGS P1", "key": "ammo1pa" },
+      { "label": "FLIES P1", "key": "ammo1pb" },
+      { "label": "BUGS P2", "key": "ammo2pa" },
+      { "label": "FLIES P2", "key": "ammo2pb" },
+      { "label": "BUGS SUM", "key": "rings" }
+    ],
+    "auditStats": [
+      { "label": "GAMES P1", "source": "frogger", "field": "games_played_left" },
+      { "label": "GAMES P2", "source": "frogger", "field": "games_played_right" },
+      { "label": "TICKETS P1", "source": "frogger", "field": "tickets_left" },
+      { "label": "TICKETS P2", "source": "frogger", "field": "tickets_right" },
+      { "label": "BUGS P1", "source": "frogger", "field": "bugs_left" },
+      { "label": "BUGS P2", "source": "frogger", "field": "bugs_right" },
+      { "label": "FLIES P1", "source": "frogger", "field": "butterflies_left" },
+      { "label": "FLIES P2", "source": "frogger", "field": "butterflies_right" },
+      { "label": "COIN DROPS L", "source": "frogger", "field": "coin_drops_left" },
+      { "label": "COIN DROPS R", "source": "frogger", "field": "coin_drops_right" },
+      { "label": "CREDITS L", "source": "frogger", "field": "current_credits_left" },
+      { "label": "CREDITS R", "source": "frogger", "field": "current_credits_right" },
+      { "label": "COINS L", "source": "frogger", "field": "current_coins_left" },
+      { "label": "COINS R", "source": "frogger", "field": "current_coins_right" },
+      { "label": "SERV CREDITS", "source": "frogger", "field": "service_credits" }
+    ]
+  },
+  "Ghostbusters": {
+    "gameId": "ghostbusters",
+    "stats": [
+      { "label": "SCORE P1", "key": "high_score" },
+      { "label": "TICKETS P1", "key": "ticket_counter" },
+      { "label": "GHOSTS P1", "key": "ammo1pa" },
+      { "label": "BOSSES P1", "key": "ammo1pb" },
+      { "label": "SCORE P2", "key": "ticket_jackpot" },
+      { "label": "TICKETS P2", "key": "rings" },
+      { "label": "GHOSTS P2", "key": "ammo2pa" },
+      { "label": "BOSSES P2", "key": "ammo2pb" },
+      { "label": "COINS", "key": "coin1" },
+      { "label": "CASH", "key": "coin2" }
+    ],
+    "auditStats": [
+      { "label": "TICKETS P1", "source": "tickets", "field": "ticketsAwardedPlayer1" },
+      { "label": "TICKETS P2", "source": "tickets", "field": "ticketsAwardedPlayer2" },
+      { "label": "TOTAL SCORE", "source": "gameplay", "field": "Score" },
+      { "label": "GHOSTS", "source": "gameplay", "field": "GhostsKilled" },
+      { "label": "BOSSES", "source": "gameplay", "field": "BossesKilled" },
+      { "label": "WINS", "source": "gameplay", "field": "Wins" },
+      { "label": "SESSION RD", "source": "session", "field": "current_round" }
+    ]
+  },
+  "Angry Birds Arcade": {
+    "gameId": "angry_birds",
+    "stats": [
+      { "label": "TICKETS", "key": "ticket_counter" },
+      { "label": "COINS", "key": "coin1" },
+      { "label": "SESSIONS", "key": "lamp_start" }
+    ],
+    "auditStats": []
+  }
+}

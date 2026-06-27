@@ -1,4 +1,5 @@
 import './styles.css';
+import GAME_MANIFESTS from './game-manifests.json';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
@@ -140,10 +141,26 @@ function getAuditValue(source, field) {
   return null;
 }
 
+function getGameManifest(gameName) {
+  return GAME_MANIFESTS[gameName] || null;
+}
+
+function getStatConfig(gameName) {
+  const manifest = getGameManifest(gameName);
+  if (manifest && manifest.stats && manifest.stats.length) return manifest.stats;
+  return STAT_CONFIGS[gameName] || getDefaultStatConfig();
+}
+
+function getAuditConfig(gameName) {
+  const manifest = getGameManifest(gameName);
+  if (manifest && manifest.auditStats && manifest.auditStats.length) return manifest.auditStats;
+  return AUDIT_CONFIGS[gameName];
+}
+
 function renderAuditData(gameName) {
   const container = document.getElementById('auditStats');
   if (!container) return;
-  const config = AUDIT_CONFIGS[gameName];
+  const config = getAuditConfig(gameName);
   if (!config) { container.innerHTML = ''; return; }
   container.innerHTML = '';
   config.forEach(stat => {
@@ -384,7 +401,7 @@ async function updateDisplay() {
   document.getElementById('ticketVal').textContent = combined.ticket_counter;
 
   // Dynamic per-game stat boxes
-  const config = STAT_CONFIGS[gameName] || getDefaultStatConfig();
+  const config = getStatConfig(gameName);
   const statContainer = document.getElementById('gameStats');
   if (statContainer) {
     statContainer.innerHTML = '';
