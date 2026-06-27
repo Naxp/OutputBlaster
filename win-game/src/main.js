@@ -50,6 +50,11 @@ const STAT_CONFIGS = {
     { label: 'COINS', key: 'coin1' },
     { label: 'CASH', key: 'coin2' },
   ],
+  'Angry Birds Arcade': [
+    { label: 'TICKETS', key: 'ticket_counter' },
+    { label: 'COINS', key: 'coin1' },
+    { label: 'SESSIONS', key: 'lamp_start' },
+  ],
 };
 
 // Per-game audit stat config (from RTDT file watcher or Frogger binary audit)
